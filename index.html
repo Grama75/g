@@ -2,42 +2,243 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>思维导图</title>
+<title>思维导图 · 全能版</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none}
 body{background:#eef2f7;font-family:'Microsoft YaHei',sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
-#toolbar{background:#fff;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid #ddd;flex-shrink:0;min-height:60px}
-#toolbar button{background:#fff;border:1px solid #ccc;padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;min-height:44px}
+#toolbar{background:#fff;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-bottom:1px solid #ddd;flex-shrink:0;min-height:56px}
+#toolbar button{background:#fff;border:1px solid #ccc;padding:6px 14px;border-radius:30px;font-size:13px;cursor:pointer;min-height:40px;min-width:40px}
 #toolbar button:hover{background:#2c3e50;color:#fff}
-#toolbar .del{color:#e74c3c}
-#toolbar .del:hover{background:#e74c3c;color:#fff}
-#search-box{padding:6px 16px;border-radius:30px;border:1px solid #ddd;font-size:14px;outline:0;width:160px;min-height:40px}
-#search-box:focus{border-color:#3498db;width:220px}
+#toolbar .del{color:#e74c3c}#toolbar .del:hover{background:#e74c3c;color:#fff}
+#search-box{padding:6px 14px;border-radius:30px;border:1px solid #ddd;font-size:13px;outline:0;width:140px;min-height:38px}
+#search-box:focus{border-color:#3498db;width:200px}
 .highlight{background:#f1c40f!important;color:#2c3e50!important}
 #canvas-wrapper{flex:1;overflow:hidden;position:relative;background:#fff;cursor:grab}
 #canvas-wrapper:active{cursor:grabbing}
 #canvas-view{transform-origin:0 0;padding:40px;transition:transform .05s linear}
 .node{display:flex;flex-direction:column;align-items:center;position:relative}
-.node-content{background:#3498db;color:#fff;padding:10px 22px;border-radius:30px;font-size:16px;cursor:grab;box-shadow:0 2px 8px rgba(52,152,219,.3);margin:4px 0;white-space:nowrap;border:2px solid transparent;display:flex;align-items:center;gap:8px;min-height:44px}
+.node-content{color:#fff;padding:10px 22px;border-radius:30px;font-size:16px;cursor:grab;box-shadow:0 2px 8px rgba(52,152,219,.3);margin:4px 0;white-space:nowrap;border:2px solid transparent;display:flex;align-items:center;gap:8px;min-height:44px;transition:background .2s}
 .node-content.root{background:#2c3e50;font-size:20px;font-weight:700}
 .node-content.selected{border-color:#f1c40f;box-shadow:0 0 0 3px rgba(241,196,15,.5)}
 .node-content.drag-over{border-color:#2ecc71;box-shadow:0 0 0 4px rgba(46,204,113,.6)}
+.node-content .link-icon{font-size:12px;opacity:.7;cursor:pointer}
+.node-content .color-picker{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.5);cursor:pointer;flex-shrink:0}
 .toggle-btn{display:inline-flex;justify-content:center;align-items:center;width:24px;height:24px;background:rgba(255,255,255,.25);border-radius:50%;font-size:16px;cursor:pointer}
 .toggle-btn.collapsed{transform:rotate(-90deg)}
 .children{display:flex;justify-content:center;padding-top:20px;gap:30px;flex-wrap:wrap;position:relative}
 .children.collapsed{display:none}
 .children::before{content:'';position:absolute;top:0;left:50%;width:2px;height:20px;background:#ccc}
 .children>.node::before{content:'';position:absolute;top:-20px;left:50%;width:2px;height:20px;background:#ccc}
-#status{background:#f8f9fa;padding:6px 20px;font-size:13px;color:#888;border-top:1px solid #eee;display:flex;justify-content:space-between;flex-shrink:0}
-@media(max-width:600px){#toolbar button{font-size:13px;padding:6px 12px}#search-box{width:120px}.node-content{font-size:14px;padding:8px 16px}}
+#status{background:#f8f9fa;padding:4px 16px;font-size:12px;color:#888;border-top:1px solid #eee;display:flex;justify-content:space-between;flex-shrink:0;flex-wrap:wrap;gap:4px}
+#status button{background:transparent;border:1px solid #ddd;border-radius:12px;padding:2px 12px;font-size:12px;cursor:pointer}
+#status button:hover{background:#eee}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:none;justify-content:center;align-items:center;z-index:999}
+.modal.active{display:flex}
+.modal-box{background:#fff;border-radius:16px;padding:24px;max-width:90%;width:400px;max-height:80vh;overflow-y:auto}
+.modal-box textarea{width:100%;height:200px;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical}
+.modal-box .btn-row{display:flex;gap:10px;margin-top:12px;justify-content:flex-end}
+.modal-box .btn-row button{padding:8px 20px;border-radius:20px;border:none;cursor:pointer;font-size:14px}
+.modal-box .btn-row .primary{background:#3498db;color:#fff}
+.modal-box .btn-row .secondary{background:#eee}
+@media(max-width:600px){#toolbar button{font-size:12px;padding:4px 10px}#search-box{width:100px}.node-content{font-size:14px;padding:6px 14px}}
 </style>
 </head>
 <body>
-<div id=toolbar><button onclick=addChild()>➕子节点</button><button onclick=addSibling()>↕️兄弟</button><button onclick=editNode()>✏️编辑</button><button class=del onclick=deleteNode()>🗑️删除</button><button onclick=toggleAll(1)>📂展开</button><button onclick=toggleAll(0)>📁收起</button><input id=search-box placeholder=🔍搜索 oninput=searchNodes(this.value)></div>
+<div id=toolbar>
+  <button onclick=addChild()>➕子</button>
+  <button onclick=addSibling()>↕️兄</button>
+  <button onclick=editNode()>✏️编</button>
+  <button class=del onclick=deleteNode()>🗑️删</button>
+  <button onclick=toggleAll(1)>📂展开</button>
+  <button onclick=toggleAll(0)>📁收起</button>
+  <input id=search-box placeholder=🔍搜索 oninput=searchNodes(this.value)>
+  <button onclick=showImportModal()>📥导入</button>
+  <button onclick=exportImage()>🖼️导出</button>
+</div>
 <div id=canvas-wrapper><div id=canvas-view></div></div>
-<div id=status><span id=node-count>节点:0</span><span id=zoom-level>缩放:100%</span></div>
+<div id=status>
+  <span id=node-count>节点:0</span>
+  <span id=zoom-level>缩放:100%</span>
+  <span>💡点击节点后点颜色块换色</span>
+</div>
+
+<!-- 导入弹窗 -->
+<div class=modal id=importModal>
+  <div class=modal-box>
+    <h3>📥 导入书摘/文本</h3>
+    <p style=font-size:13px;color:#888;margin:8px 0>每行一个知识点，缩进表示层级（用2个空格或Tab）</p>
+    <textarea id=importText placeholder="项目计划&#10;  需求分析&#10;    用户调研&#10;  技术选型&#10;    前端"></textarea>
+    <div class=btn-row>
+      <button class=secondary onclick=closeImportModal()>取消</button>
+      <button class=primary onclick=importFromText()>生成导图</button>
+    </div>
+  </div>
+</div>
+
 <script>
-let treeData={id:'root',text:'🚀我的项目',collapsed:!1,children:[{id:'n1',text:'需求分析',collapsed:!1,children:[{id:'n1-1',text:'用户调研'}]},{id:'n2',text:'技术选型',collapsed:!1,children:[{id:'n2-1',text:'前端'},{id:'n2-2',text:'后端'}]},{id:'n3',text:'部署上线',collapsed:!1,children:[]}]};let selectedId='root',idCounter=100;const view={scale:1,panX:0,panY:0},wrapper=document.getElementById('canvas-wrapper'),viewEl=document.getElementById('canvas-view');function updateTransform(){viewEl.style.transform=`translate(${view.panX}px,${view.panY}px) scale(${view.scale})`;document.getElementById('zoom-level').textContent=`缩放:${Math.round(view.scale*100)}%`}wrapper.addEventListener('wheel',e=>{e.preventDefault();view.scale=Math.min(2,Math.max(.3,view.scale+(e.deltaY>0?-.08:.08)));updateTransform()},{passive:!1});let isPanning=!1,startX,startY,startPanX,startPanY;wrapper.addEventListener('mousedown',e=>{if(e.target===wrapper||e.target===viewEl){isPanning=!0;startX=e.clientX;startY=e.clientY;startPanX=view.panX;startPanY=view.panY;wrapper.style.cursor='grabbing'}});window.addEventListener('mousemove',e=>{if(!isPanning)return;view.panX=startPanX+(e.clientX-startX);view.panY=startPanY+(e.clientY-startY);updateTransform()});window.addEventListener('mouseup',()=>{if(isPanning){isPanning=!1;wrapper.style.cursor='grab'}});let touchPanStart=null;wrapper.addEventListener('touchstart',e=>{if(e.target===wrapper||e.target===viewEl){const t=e.touches[0];touchPanStart={x:t.clientX,y:t.clientY,panX:view.panX,panY:view.panY}}},{passive:!0});wrapper.addEventListener('touchmove',e=>{if(!touchPanStart)return;const t=e.touches[0];view.panX=touchPanStart.panX+(t.clientX-touchPanStart.x);view.panY=touchPanStart.panY+(t.clientY-touchPanStart.y);updateTransform()},{passive:!0});wrapper.addEventListener('touchend',()=>{touchPanStart=null},{passive:!0});function render(){viewEl.innerHTML=buildTreeHTML(treeData,!0);document.querySelectorAll('.node-content').forEach(el=>{el.addEventListener('click',e=>{e.stopPropagation();selectNode(el.dataset.id)})});document.querySelectorAll('.toggle-btn').forEach(btn=>{btn.addEventListener('click',e=>{e.stopPropagation();toggleCollapse(btn.dataset.id)})});document.querySelectorAll('.node-content').forEach(el=>{if(el.dataset.id===selectedId)el.classList.add('selected')});document.getElementById('node-count').textContent='节点:'+countNodes(treeData)}function buildTreeHTML(node,isRoot){const hasChildren=node.children&&node.children.length>0,isCollapsed=node.collapsed===!0;let html=`<div class=node data-id="${node.id}">`;html+=`<div class="node-content ${isRoot?'root':''}" data-id="${node.id}" draggable=true>`;if(hasChildren)html+=`<span class="toggle-btn ${isCollapsed?'collapsed':''}" data-id="${node.id}">▼</span>`;html+=node.text+'</div>';if(hasChildren){html+=`<div class="children ${isCollapsed?'collapsed':''}">`;node.children.forEach(child=>{html+=buildTreeHTML(child,!1)});html+='</div>'}return html+'</div>'}function countNodes(node){let c=1;if(node.children)node.children.forEach(n=>c+=countNodes(n));return c}function selectNode(id){selectedId=id;render()}function findNode(node,id){if(node.id===id)return node;if(node.children){for(let child of node.children){const found=findNode(child,id);if(found)return found}}return null}function findParent(node,targetId,parent=null){if(node.id===targetId)return parent;if(node.children){for(let child of node.children){const found=findParent(child,targetId,node);if(found!==undefined)return found}}return undefined}function addChild(){const parent=findNode(treeData,selectedId);if(!parent)return alert('请选中节点');if(!parent.children)parent.children=[];parent.children.push({id:'id-'+(idCounter++),text:'新节点',collapsed:!1,children:[]});render()}function addSibling(){if(selectedId==='root')return alert('根节点不能加兄弟');const parent=findParent(treeData,selectedId);if(!parent)return;const idx=parent.children.findIndex(c=>c.id===selectedId);parent.children.splice(idx+1,0,{id:'id-'+(idCounter++),text:'兄弟节点',collapsed:!1,children:[]});render()}function editNode(){const node=findNode(treeData,selectedId);if(!node)return;const t=prompt('修改文字:',node.text);if(t!==null&&t.trim()!==''){node.text=t.trim();render()}}function deleteNode(){if(selectedId==='root')return alert('根节点不能删');if(!confirm('确定删除该节点及子节点吗？'))return;const parent=findParent(treeData,selectedId);if(!parent)return;parent.children=parent.children.filter(c=>c.id!==selectedId);selectedId=parent.id;render()}function toggleCollapse(id){const node=findNode(treeData,id);if(!node)return;node.collapsed=!node.collapsed;render()}function toggleAll(expand){function walk(n){n.collapsed=!expand;if(n.children)n.children.forEach(walk)}walk(treeData);render()}let searchKeyword='';function searchNodes(keyword){searchKeyword=keyword.trim().toLowerCase();render();if(!searchKeyword)return;setTimeout(()=>{document.querySelectorAll('.node-content').forEach(el=>{const txt=el.textContent.replace('▼','').trim().toLowerCase();if(txt.includes(searchKeyword)){el.classList.add('highlight');let p=findParent(treeData,el.dataset.id);while(p){if(p.collapsed)p.collapsed=!1;p=findParent(treeData,p.id)}}})},10)}let draggedId=null;viewEl.addEventListener('dragstart',e=>{const el=e.target.closest('.node-content');if(!el)return;draggedId=el.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',draggedId)});viewEl.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';const t=e.target.closest('.node-content');document.querySelectorAll('.node-content').forEach(n=>n.classList.remove('drag-over'));if(t)t.classList.add('drag-over')});viewEl.addEventListener('dragleave',e=>{const t=e.target.closest('.node-content');if(t)t.classList.remove('drag-over')});viewEl.addEventListener('drop',e=>{e.preventDefault();document.querySelectorAll('.node-content').forEach(n=>n.classList.remove('drag-over'));const te=e.target.closest('.node-content');if(!te)return;const tid=te.dataset.id;if(draggedId===tid||draggedId==='root')return;const dn=findNode(treeData,draggedId),tn=findNode(treeData,tid);if(!dn||!tn)return;let p=findParent(treeData,tid);while(p){if(p.id===draggedId)return alert('不能移到子节点下');p=findParent(treeData,p.id)}const op=findParent(treeData,draggedId);if(!op)return;op.children=op.children.filter(c=>c.id!==draggedId);if(!tn.children)tn.children=[];tn.children.push(dn);tn.collapsed=!1;selectedId=draggedId;render()});let touchDragData=null;viewEl.addEventListener('touchstart',e=>{const el=e.target.closest('.node-content');if(!el||e.target.closest('.toggle-btn'))return;const t=e.touches[0];touchDragData={id:el.dataset.id,startX:t.clientX,startY:t.clientY,moved:!1,ghost:null}},{passive:!0});viewEl.addEventListener('touchmove',e=>{if(!touchDragData)return;const t=e.touches[0];if(Math.abs(t.clientX-touchDragData.startX)<10&&Math.abs(t.clientY-touchDragData.startY)<10)return;touchDragData.moved=!0;e.preventDefault();if(!touchDragData.ghost){const o=document.querySelector(`.node-content[data-id="${touchDragData.id}"]`);if(!o)return;const g=o.cloneNode(!0);g.style.position='fixed';g.style.pointerEvents='none';g.style.opacity='.8';g.style.transform='scale(1.1)';g.style.zIndex='9999';g.style.boxShadow='0 8px 30px rgba(0,0,0,.3)';document.body.appendChild(g);touchDragData.ghost=g}const g=touchDragData.ghost;g.style.left=(t.clientX-60)+'px';g.style.top=(t.clientY-30)+'px';document.querySelectorAll('.node-content').forEach(n=>n.classList.remove('drag-over'));const target=document.elementFromPoint(t.clientX,t.clientY);if(target){const el=target.closest('.node-content');if(el&&el.dataset.id!==touchDragData.id)el.classList.add('drag-over')}},{passive:!1});viewEl.addEventListener('touchend',e=>{if(!touchDragData)return;if(touchDragData.ghost)touchDragData.ghost.remove();document.querySelectorAll('.node-content').forEach(n=>n.classList.remove('drag-over'));if(touchDragData.moved){const touch=e.changedTouches[0],target=document.elementFromPoint(touch.clientX,touch.clientY);if(target){const te=target.closest('.node-content');if(te&&te.dataset.id!==touchDragData.id){const did=touchDragData.id,tid=te.dataset.id;if(did==='root'){touchDragData=null;return}const dn=findNode(treeData,did),tn=findNode(treeData,tid);if(!dn||!tn){touchDragData=null;return}let p=findParent(treeData,tid);while(p){if(p.id===did){touchDragData=null;return}p=findParent(treeData,p.id)}const op=findParent(treeData,did);if(!op){touchDragData=null;return}op.children=op.children.filter(c=>c.id!==did);if(!tn.children)tn.children=[];tn.children.push(dn);tn.collapsed=!1;selectedId=did;render()}}}touchDragData=null},{passive:!0});render();updateTransform();
+// ======================== 数据 ========================
+let treeData = {
+  id:'root', text:'🚀我的项目', collapsed:!1, color:'#2c3e50', link:'',
+  children:[
+    { id:'n1', text:'需求分析', collapsed:!1, color:'#3498db', link:'', children:[
+      { id:'n1-1', text:'用户调研', collapsed:!1, color:'#e67e22', link:'', children:[] }
+    ]},
+    { id:'n2', text:'技术选型', collapsed:!1, color:'#3498db', link:'', children:[
+      { id:'n2-1', text:'前端', collapsed:!1, color:'#e67e22', link:'', children:[] },
+      { id:'n2-2', text:'后端', collapsed:!1, color:'#e67e22', link:'', children:[] }
+    ]},
+    { id:'n3', text:'部署上线', collapsed:!1, color:'#3498db', link:'', children:[] }
+  ]
+};
+let selectedId='root', idCounter=100, nodeColors={};
+
+// ======================== 视图 ========================
+const view={scale:1,panX:0,panY:0}, wrapper=document.getElementById('canvas-wrapper'), viewEl=document.getElementById('canvas-view');
+function updateTransform(){viewEl.style.transform=`translate(${view.panX}px,${view.panY}px) scale(${view.scale})`;document.getElementById('zoom-level').textContent=`缩放:${Math.round(view.scale*100)}%`}
+wrapper.addEventListener('wheel',e=>{e.preventDefault();view.scale=Math.min(2,Math.max(.3,view.scale+(e.deltaY>0?-.08:.08)));updateTransform()},{passive:!1});
+let isPanning=!1,sx,sy,spx,spy;wrapper.addEventListener('mousedown',e=>{if(e.target===wrapper||e.target===viewEl){isPanning=!0;sx=e.clientX;sy=e.clientY;spx=view.panX;spy=view.panY;wrapper.style.cursor='grabbing'}});
+window.addEventListener('mousemove',e=>{if(!isPanning)return;view.panX=spx+(e.clientX-sx);view.panY=spy+(e.clientY-sy);updateTransform()});
+window.addEventListener('mouseup',()=>{if(isPanning){isPanning=!1;wrapper.style.cursor='grab'}});
+let tp=null;wrapper.addEventListener('touchstart',e=>{if(e.target===wrapper||e.target===viewEl){const t=e.touches[0];tp={x:t.clientX,y:t.clientY,panX:view.panX,panY:view.panY}}},{passive:!0});
+wrapper.addEventListener('touchmove',e=>{if(!tp)return;const t=e.touches[0];view.panX=tp.panX+(t.clientX-tp.x);view.panY=tp.panY+(t.clientY-tp.y);updateTransform()},{passive:!0});
+wrapper.addEventListener('touchend',()=>{tp=null},{passive:!0});
+
+// ======================== 渲染 ========================
+function render(){
+  // 重新编号
+  let counter={val:0};
+  function assignNumbers(node, prefix){
+    if(node.id!=='root'){
+      counter.val++;
+      node._number = prefix ? prefix + '.' + counter.val : String(counter.val);
+    }
+    if(node.children){
+      let childCounter=0;
+      node.children.forEach(child=>{
+        childCounter++;
+        assignNumbers(child, node.id==='root' ? '' : (node._number || ''));
+      });
+    }
+  }
+  assignNumbers(treeData, '');
+  viewEl.innerHTML=buildTreeHTML(treeData,!0);
+  document.querySelectorAll('.node-content').forEach(el=>{
+    el.addEventListener('click',e=>{if(e.target.closest('.color-picker')||e.target.closest('.link-icon'))return;e.stopPropagation();selectNode(el.dataset.id)});
+  });
+  document.querySelectorAll('.toggle-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();toggleCollapse(btn.dataset.id)});
+  });
+  document.querySelectorAll('.color-picker').forEach(picker=>{
+    picker.addEventListener('click',e=>{e.stopPropagation();const id=picker.dataset.id;const color=prompt('输入颜色代码(如 #ff6b6b 或 red):', findNode(treeData,id)?.color||'#3498db');if(color)changeNodeColor(id,color)});
+  });
+  document.querySelectorAll('.link-icon').forEach(icon=>{
+    icon.addEventListener('click',e=>{e.stopPropagation();const id=icon.dataset.id;const node=findNode(treeData,id);if(!node)return;const url=prompt('输入链接地址(如 https://... ):', node.link||'');if(url!==null){node.link=url.trim();render()}});
+  });
+  document.querySelectorAll('.node-content').forEach(el=>{if(el.dataset.id===selectedId)el.classList.add('selected')});
+  document.getElementById('node-count').textContent='节点:'+countNodes(treeData);
+}
+
+function buildTreeHTML(node,isRoot){
+  const hasChildren=node.children&&node.children.length>0, isCollapsed=node.collapsed===!0;
+  const color=node.color||(isRoot?'#2c3e50':'#3498db');
+  const number=node._number||'';
+  const displayText = node.id==='root' ? node.text : (number ? number+'. '+node.text : node.text);
+  let html=`<div class=node data-id="${node.id}">`;
+  html+=`<div class="node-content ${isRoot?'root':''}" data-id="${node.id}" draggable=true style="background:${color}">`;
+  if(hasChildren)html+=`<span class="toggle-btn ${isCollapsed?'collapsed':''}" data-id="${node.id}">▼</span>`;
+  html+=displayText;
+  if(!isRoot){
+    html+=`<span class="color-picker" data-id="${node.id}" style="background:${color}">🎨</span>`;
+    html+=`<span class="link-icon" data-id="${node.id}">🔗</span>`;
+  }
+  html+=`</div>`;
+  if(hasChildren){
+    html+=`<div class="children ${isCollapsed?'collapsed':''}">`;
+    node.children.forEach(child=>{html+=buildTreeHTML(child,!1)});
+    html+=`</div>`;
+  }
+  return html+'</div>';
+}
+function countNodes(node){let c=1;if(node.children)node.children.forEach(n=>c+=countNodes(n));return c}
+
+// ======================== 操作 ========================
+function selectNode(id){selectedId=id;render()}
+function findNode(node,id){if(node.id===id)return node;if(node.children){for(let c of node.children){const f=findNode(c,id);if(f)return f}}return null}
+function findParent(node,targetId,p=null){if(node.id===targetId)return p;if(node.children){for(let c of node.children){const f=findParent(c,targetId,node);if(f!==undefined)return f}}return undefined}
+function addChild(){const p=findNode(treeData,selectedId);if(!p)return alert('请选中节点');if(!p.children)p.children=[];p.children.push({id:'id-'+(idCounter++),text:'新节点',collapsed:!1,color:'#3498db',link:'',children:[]});render()}
+function addSibling(){if(selectedId==='root')return alert('根节点不能加兄弟');const p=findParent(treeData,selectedId);if(!p)return;const idx=p.children.findIndex(c=>c.id===selectedId);p.children.splice(idx+1,0,{id:'id-'+(idCounter++),text:'兄弟节点',collapsed:!1,color:'#3498db',link:'',children:[]});render()}
+function editNode(){const n=findNode(treeData,selectedId);if(!n)return;const t=prompt('修改文字:',n.text);if(t!==null&&t.trim()!==''){n.text=t.trim();render()}}
+function deleteNode(){if(selectedId==='root')return alert('根节点不能删');if(!confirm('确定删除？'))return;const p=findParent(treeData,selectedId);if(!p)return;p.children=p.children.filter(c=>c.id!==selectedId);selectedId=p.id;render()}
+function toggleCollapse(id){const n=findNode(treeData,id);if(!n)return;n.collapsed=!n.collapsed;render()}
+function toggleAll(exp){function walk(n){n.collapsed=!exp;if(n.children)n.children.forEach(walk)}walk(treeData);render()}
+function changeNodeColor(id,color){const n=findNode(treeData,id);if(!n)return;n.color=color;render()}
+let searchKeyword='';
+function searchNodes(keyword){
+  searchKeyword=keyword.trim().toLowerCase();render();if(!searchKeyword)return;
+  setTimeout(()=>{document.querySelectorAll('.node-content').forEach(el=>{const txt=el.textContent.replace(/[▼🔗🎨]/g,'').trim().toLowerCase();if(txt.includes(searchKeyword)){el.classList.add('highlight');let p=findParent(treeData,el.dataset.id);while(p){if(p.collapsed)p.collapsed=!1;p=findParent(treeData,p.id)}}})},10)
+}
+
+// ======================== 导入书摘 ========================
+function showImportModal(){document.getElementById('importModal').classList.add('active')}
+function closeImportModal(){document.getElementById('importModal').classList.remove('active')}
+function importFromText(){
+  const text=document.getElementById('importText').value;
+  if(!text.trim())return alert('请输入内容');
+  const lines=text.split('\n').filter(l=>l.trim());
+  const root={id:'root',text:'📖 书摘',collapsed:!1,color:'#2c3e50',link:'',children:[]};
+  const stack=[{node:root,level:0}];
+  lines.forEach(line=>{
+    const indent=line.match(/^[\s\t]*/)[0].length;
+    const level=Math.floor(indent/2);
+    const text=line.trim();
+    const newNode={id:'id-'+(idCounter++),text, collapsed:!1,color:'#3498db',link:'',children:[]};
+    while(stack.length>1 && stack[stack.length-1].level>=level) stack.pop();
+    const parent=stack[stack.length-1].node;
+    if(!parent.children)parent.children=[];
+    parent.children.push(newNode);
+    stack.push({node:newNode,level:level});
+  });
+  treeData=root;selectedId='root';closeImportModal();render();
+}
+
+// ======================== 导出图片 ========================
+function exportImage(){
+  const wrapper=document.getElementById('canvas-wrapper');
+  const view=document.getElementById('canvas-view');
+  const scale=1.5;
+  const rect=view.getBoundingClientRect();
+  const canvas=document.createElement('canvas');
+  canvas.width=rect.width*scale;
+  canvas.height=rect.height*scale;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(scale,scale);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,rect.width,rect.height);
+  // 简单截图方式：用html2canvas需要额外库，这里用原生方案
+  // 由于无法直接截图DOM，我们用简化方案：提示用户使用浏览器截图
+  alert('📸 请使用手机自带的截图功能（电源键+音量减）或浏览器分享中的"截图"功能保存。\n如需高质量导出，后续可加 html2canvas 库。');
+}
+
+// ======================== 拖拽 ========================
+let draggedId=null;
+viewEl.addEventListener('dragstart',e=>{const el=e.target.closest('.node-content');if(!el)return;draggedId=el.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',draggedId)});
+viewEl.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';const t=e.target.closest('.node-content');document.querySelectorAll('.node-content').forEach(n=>n.classList.remove('drag-over'));if(t)t.classList.add('drag-over')});
+viewEl.addEventListener('dragleave',e=>{const t=e.target.closest('.node-content');if(t)t.classList.remove('drag-over')});
+viewEl.addEventListener('drop',e=>{
+  e.preventDefault();document.querySelectorAll('.node-content').forEach(n=>n.classList.remove('drag-over'));
+  const te=e.target.closest('.node-content');if(!te)return;const tid=te.dataset.id;
+  if(draggedId===tid||draggedId==='root')return;
+  const dn=findNode(treeData,draggedId),tn=findNode(treeData,tid);if(!dn||!tn)return;
+  let p=findParent(treeData,tid);while(p){if(p.id===draggedId)return alert('不能移到子节点下');p=findParent(treeData,p.id)}
+  const op=findParent(treeData,draggedId);if(!op)return;
+  op.children=op.children.filter(c=>c.id!==draggedId);
+  if(!tn.children)tn.children=[];tn.children.push(dn);tn.collapsed=!1;selectedId=draggedId;render()
+});
+let td=null;
+viewEl.addEventListener('touchstart',e=>{const el=e.target.closest('.node-content');if(!el||e.target.closest('.toggle-btn')||e.target.closest('.color-picker')||e.target.closest('.link-icon'))return;const t=e.touches[0];td={id:el.dataset.id,startX:t.clientX,startY:t.clientY,moved:!1,ghost:null}},{passive:!0});
+viewEl.addEventListener('touchmove',e=>{if(!td)return;const t=e.touches[0];if(Math.abs(t.clientX-td.startX)<10&&Math.abs(t.clientY-td.startY)<10)return;td.moved=!0;e.preventDefault();if(!td.ghost){const o=document.querySelector(`.node-content[data-id="${td.id}"]`);if(!o)return;const g=o.cloneNode(!0);g.style.position='fixed';g.style.pointerEvents='none';g.style.opacity='.8';g.style.transform='scale(1.1)';g.style.zIndex='9999';g.style.boxShadow='0 8px 30px rgba(0,0,0,.3)';document.body.appendChild(g);td.ghost=g}const g=td.ghost;g.style.left=(t.clientX-60)+'px';g.style.top=(t.clientY-30)+'px';document.querySelectorAll('.node-content').forEach(n=>n.classList.remove('drag-over'));const target=document.elementFromPoint(t.clientX,t.clientY);if(target){const el=target.closest('.node-content');if(el&&el.dataset.id!==td.id)el.classList.add('drag-over')}},{passive:!1});
+viewEl.addEventListener('touchend',e=>{if(!td)return;if(td.ghost)td.ghost.remove();document.querySelectorAll('.node-content').forEach(n=>n.classList.remove('drag-over'));if(td.moved){const touch=e.changedTouches[0],target=document.elementFromPoint(touch.clientX,touch.clientY);if(target){const te=target.closest('.node-content');if(te&&te.dataset.id!==td.id){const did=td.id,tid=te.dataset.id;if(did==='root'){td=null;return}const dn=findNode(treeData,did),tn=findNode(treeData,tid);if(!dn||!tn){td=null;return}let p=findParent(treeData,tid);while(p){if(p.id===did){td=null;return}p=findParent(treeData,p.id)}const op=findParent(treeData,did);if(!op){td=null;return}op.children=op.children.filter(c=>c.id!==did);if(!tn.children)tn.children=[];tn.children.push(dn);tn.collapsed=!1;selectedId=did;render()}}}td=null},{passive:!0});
+
+render();updateTransform();
 </script>
 </body>
 </html>
