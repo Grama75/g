@@ -3,91 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>思维导图 · 双模式</title>
+<title>全能思维导图</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#333}
 
-#header{background:#fff;padding:6px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;flex-shrink:0;height:40px}
+#header{background:#fff;padding:4px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eef0f2;flex-shrink:0;height:36px}
 #header h1{font-size:15px;font-weight:600;color:#1a1a2e}
+#header .badge{font-size:11px;color:#999}
 
-#search-bar{background:#fff;padding:4px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
-#search-bar input{flex:1;padding:5px 12px;border-radius:16px;border:1px solid #e8ecf0;font-size:13px;outline:0;background:#f5f7fa;min-height:30px}
-#search-bar input:focus{border-color:#4a6cf7}
+#search-bar{background:#fff;padding:3px 12px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
+#search-bar input{flex:1;padding:4px 12px;border-radius:14px;border:1px solid #e8ecf0;font-size:12px;outline:0;background:#f5f7fa;min-height:28px}
+#search-bar input:focus{border-color:#4a6cf7;background:#fff}
 .highlight{background:#f5a623!important;color:#1a1a2e!important}
 
 #canvas-wrapper{flex:1;overflow:hidden;position:relative;background:#fafbfc;touch-action:none;cursor:grab}
 #canvas-wrapper:active{cursor:grabbing}
-#canvas-view{transform-origin:0 0;padding:16px;transition:transform .05s linear;width:fit-content;height:fit-content}
-
-/* ----- 纵向模式样式（原有） ----- */
-.layout-vertical .node{display:flex;flex-direction:column;align-items:center;position:relative}
-.layout-vertical .node-content{background:#4a6cf7;color:#fff;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:500;box-shadow:0 2px 6px rgba(74,108,247,.2);margin:2px 0;border:2px solid transparent;display:flex;align-items:center;gap:4px;min-height:34px;transition:all .1s;position:relative}
-.layout-vertical .node-content.root{background:#1a1a2e;font-size:16px;font-weight:700}
-.layout-vertical .node-content.selected{border-color:#f5a623}
-.layout-vertical .toggle-btn{display:inline-flex;justify-content:center;align-items:center;width:18px;height:18px;background:rgba(255,255,255,.2);border-radius:50%;font-size:12px;cursor:pointer;flex-shrink:0;transition:transform .2s}
-.layout-vertical .toggle-btn.collapsed{transform:rotate(-90deg)}
-.layout-vertical .children{display:flex;justify-content:center;padding-top:10px;gap:14px;flex-wrap:wrap;position:relative}
-.layout-vertical .children.collapsed{display:none}
-.layout-vertical .children::before{content:'';position:absolute;top:0;left:50%;width:1.5px;height:10px;background:#d0d7de}
-.layout-vertical .children>.node::before{content:'';position:absolute;top:-10px;left:50%;width:1.5px;height:10px;background:#d0d7de}
-
-/* ----- 放射模式样式（Canvas绘制） ----- */
+#canvas-view{transform-origin:0 0;padding:12px;transition:transform .05s linear;width:fit-content;height:fit-content}
 #radial-canvas{display:none;width:100%;height:100%;background:#fafbfc}
 
-/* 底部工具栏 */
-#bottom-toolbar{background:#fff;border-top:1px solid #eee;display:flex;flex-wrap:wrap;justify-content:space-around;padding:4px 0 env(safe-area-inset-bottom);flex-shrink:0}
-#bottom-toolbar .group{display:flex;gap:2px;align-items:center;flex-wrap:wrap}
-#bottom-toolbar button{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;font-size:10px;color:#666;padding:4px 8px;min-height:38px;min-width:38px;touch-action:manipulation;border-radius:8px}
-#bottom-toolbar button .icon{font-size:17px;line-height:1.2}
-#bottom-toolbar button .label{margin-top:1px;font-size:9px}
-#bottom-toolbar button:active{background:#f0f2f5;color:#4a6cf7}
-#bottom-toolbar .mode-btn{background:#4a6cf7;color:#fff;border-radius:16px;padding:4px 14px;flex-direction:row;gap:4px;min-height:32px}
-#bottom-toolbar .mode-btn:active{background:#3a5bd9}
-#bottom-toolbar .mode-btn .icon{font-size:14px}
-#bottom-toolbar .del:active{color:#e74c3c}
-#bottom-toolbar .zoom-btn{background:#f5f7fa;border-radius:20px;padding:2px 10px;flex-direction:row;gap:6px;min-height:30px}
-#bottom-toolbar .zoom-btn .icon{font-size:14px}
+/* 纵向布局 */
+.layout-vertical .node{display:flex;flex-direction:column;align-items:center;position:relative}
+.layout-vertical .node-content{color:#fff;padding:4px 12px;border-radius:16px;font-size:13px;font-weight:500;box-shadow:0 2px 4px rgba(74,108,247,.15);margin:1px 0;border:2px solid transparent;display:flex;align-items:center;gap:3px;min-height:28px;transition:all .1s;position:relative}
+.layout-vertical .node-content.root{font-size:15px;font-weight:700;box-shadow:0 2px 8px rgba(26,26,46,.15)}
+.layout-vertical .node-content.selected{border-color:#f5a623;box-shadow:0 0 0 2px rgba(245,166,35,.35)}
+.layout-vertical .toggle-btn{display:inline-flex;justify-content:center;align-items:center;width:16px;height:16px;background:rgba(255,255,255,.2);border-radius:50%;font-size:10px;cursor:pointer;flex-shrink:0;transition:transform .2s}
+.layout-vertical .toggle-btn.collapsed{transform:rotate(-90deg)}
+.layout-vertical .children{display:flex;justify-content:center;padding-top:6px;gap:10px;flex-wrap:wrap;position:relative}
+.layout-vertical .children.collapsed{display:none}
+.layout-vertical .children::before{content:'';position:absolute;top:0;left:50%;width:1px;height:6px;background:#d0d7de}
+.layout-vertical .children>.node::before{content:'';position:absolute;top:-6px;left:50%;width:1px;height:6px;background:#d0d7de}
+.layout-vertical .action-icon{font-size:10px;opacity:.6;cursor:pointer;margin-left:1px;background:rgba(255,255,255,.1);border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 
-/* 弹窗 */
+/* 鱼骨/时间轴使用相同样式，由不同CSS类控制颜色/方向 */
+
+#bottom-toolbar{background:#fff;border-top:1px solid #eee;display:flex;flex-wrap:wrap;justify-content:space-around;padding:3px 0 env(safe-area-inset-bottom);flex-shrink:0}
+#bottom-toolbar .group{display:flex;gap:1px;align-items:center;flex-wrap:wrap}
+#bottom-toolbar button{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;font-size:9px;color:#666;padding:3px 6px;min-height:32px;min-width:32px;touch-action:manipulation;border-radius:6px}
+#bottom-toolbar button .icon{font-size:15px;line-height:1.2}
+#bottom-toolbar button .label{margin-top:1px}
+#bottom-toolbar button:active{background:#f0f2f5;color:#4a6cf7}
+#bottom-toolbar .mode-btn{background:#4a6cf7;color:#fff;border-radius:12px;padding:3px 10px;flex-direction:row;gap:3px;min-height:28px}
+#bottom-toolbar .mode-btn:active{background:#3a5bd9}
+#bottom-toolbar .del:active{color:#e74c3c}
+#bottom-toolbar .zoom-btn{background:#f5f7fa;border-radius:16px;padding:2px 8px;flex-direction:row;gap:4px;min-height:26px}
+#bottom-toolbar .zoom-btn .icon{font-size:13px}
+#bottom-toolbar .layout-btn{background:#eef2f7;border-radius:12px;padding:2px 8px;min-height:26px;font-size:10px}
+
 .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:none;justify-content:center;align-items:center;z-index:999;backdrop-filter:blur(3px)}
 .modal.active{display:flex}
-.modal-box{background:#fff;border-radius:16px;padding:20px;width:92%;max-width:400px;max-height:80vh;overflow-y:auto}
-.modal-box h3{font-size:17px;margin-bottom:4px}
-.modal-box p{font-size:13px;color:#888;margin:4px 0 12px}
-.modal-box textarea{width:100%;height:150px;padding:10px;border:1px solid #e8ecf0;border-radius:10px;font-size:13px;resize:vertical;font-family:inherit}
-.modal-box .btn-row{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
-.modal-box .btn-row button{padding:8px 20px;border-radius:20px;border:none;font-size:13px;font-weight:500;min-height:36px}
+.modal-box{background:#fff;border-radius:14px;padding:16px;width:92%;max-width:380px;max-height:80vh;overflow-y:auto}
+.modal-box h3{font-size:16px;margin-bottom:3px}
+.modal-box p{font-size:12px;color:#888;margin:3px 0 10px}
+.modal-box textarea{width:100%;height:120px;padding:8px;border:1px solid #e8ecf0;border-radius:8px;font-size:12px;resize:vertical;font-family:inherit}
+.modal-box .btn-row{display:flex;gap:6px;margin-top:10px;justify-content:flex-end}
+.modal-box .btn-row button{padding:6px 16px;border-radius:16px;border:none;font-size:12px;font-weight:500;min-height:32px}
 .modal-box .btn-row .primary{background:#4a6cf7;color:#fff}
 .modal-box .btn-row .secondary{background:#f0f2f5;color:#555}
 </style>
 </head>
 <body>
 
-<!-- 顶栏 -->
 <div id="header">
   <h1>🧠 思维导图</h1>
-  <span id="node-count" style="font-size:12px;color:#888;">0节点</span>
+  <span class="badge" id="node-count">0节点</span>
 </div>
 
-<!-- 搜索 -->
 <div id="search-bar">
   <input id="search-box" placeholder="🔍 搜索节点" oninput="searchNodes(this.value)">
 </div>
 
-<!-- 画布 -->
 <div id="canvas-wrapper">
   <div id="canvas-view" class="layout-vertical"></div>
   <canvas id="radial-canvas"></canvas>
 </div>
 
-<!-- 底部工具栏 -->
 <div id="bottom-toolbar">
   <div class="group">
     <button onclick="addChild()"><span class="icon">➕</span><span class="label">子</span></button>
-    <button onclick="addSibling()"><span class="icon">↕️</span><span class="label">兄弟</span></button>
-    <button onclick="editNode()"><span class="icon">✏️</span><span class="label">编辑</span></button>
-    <button class="del" onclick="deleteNode()"><span class="icon">🗑️</span><span class="label">删除</span></button>
+    <button onclick="addSibling()"><span class="icon">↕️</span><span class="label">兄</span></button>
+    <button onclick="editNode()"><span class="icon">✏️</span><span class="label">编</span></button>
+    <button class="del" onclick="deleteNode()"><span class="icon">🗑️</span><span class="label">删</span></button>
   </div>
   <div class="group">
     <button onclick="showImportModal()"><span class="icon">📥</span><span class="label">导入</span></button>
@@ -96,30 +92,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <button onclick="toggleAll(0)"><span class="icon">📁</span><span class="label">收起</span></button>
   </div>
   <div class="group">
-    <button class="mode-btn" onclick="switchLayout()"><span class="icon" id="modeIcon">🔘</span><span class="label" id="modeLabel">放射</span></button>
+    <button class="layout-btn" onclick="switchLayout('vertical')">⬇️纵向</button>
+    <button class="layout-btn" onclick="switchLayout('radial')">◎放射</button>
+    <button class="layout-btn" onclick="switchLayout('fishbone')">🐟鱼骨</button>
+    <button class="layout-btn" onclick="switchLayout('timeline')">⏳时间轴</button>
     <button class="zoom-btn" onclick="zoomIn()"><span class="icon">➕</span></button>
     <button class="zoom-btn" onclick="resetView()"><span class="icon">⟲</span></button>
     <button class="zoom-btn" onclick="zoomOut()"><span class="icon">➖</span></button>
   </div>
 </div>
 
-<!-- 导入弹窗 -->
 <div class="modal" id="importModal">
   <div class="modal-box">
     <h3>📥 导入文本</h3>
-    <p>每行一个知识点，<strong>缩进表示层级</strong>（2空格或Tab）</p>
-    <textarea id="importText" placeholder="年度计划&#10;  学习&#10;    前端&#10;  健身"></textarea>
+    <p>每行一个知识点，<strong>缩进表示层级</strong></p>
+    <textarea id="importText" placeholder="年度计划&#10;  学习&#10;    前端"></textarea>
     <div class="btn-row">
       <button class="secondary" onclick="closeImportModal()">取消</button>
-      <button class="primary" onclick="importFromText()">生成导图</button>
+      <button class="primary" onclick="importFromText()">生成</button>
     </div>
   </div>
 </div>
 
 <script>
-// ============================================================
-// 数据
-// ============================================================
+// ==================== 数据 ====================
 let treeData = {
   id:'root', text:'🚀 我的项目', collapsed:!1, color:'#1a1a2e',
   children:[
@@ -134,12 +130,9 @@ let treeData = {
   ]
 };
 let selectedId='root', idCounter=100;
-let currentLayout = 'vertical'; // 'vertical' | 'radial'
+let currentLayout = 'vertical';
 
-// ============================================================
-// 视图控制（缩放+平移）
-// ============================================================
-const view={scale:1, panX:0, panY:0};
+const view={scale:1,panX:0,panY:0};
 const wrapper=document.getElementById('canvas-wrapper');
 const viewEl=document.getElementById('canvas-view');
 const canvas=document.getElementById('radial-canvas');
@@ -149,14 +142,12 @@ function updateTransform(){
   viewEl.style.transform=`translate(${view.panX}px,${view.panY}px) scale(${view.scale})`;
   canvas.style.transform=`translate(${view.panX}px,${view.panY}px) scale(${view.scale})`;
 }
-function zoomIn(){ view.scale=Math.min(2, view.scale+0.15); updateTransform(); if(currentLayout==='radial') drawRadial(); }
-function zoomOut(){ view.scale=Math.max(0.3, view.scale-0.15); updateTransform(); if(currentLayout==='radial') drawRadial(); }
-function resetView(){ view.scale=1; view.panX=0; view.panY=0; updateTransform(); if(currentLayout==='radial') drawRadial(); }
+function zoomIn(){ view.scale=Math.min(2, view.scale+0.15); updateTransform(); if(currentLayout!=='vertical') drawLayout(); }
+function zoomOut(){ view.scale=Math.max(0.3, view.scale-0.15); updateTransform(); if(currentLayout!=='vertical') drawLayout(); }
+function resetView(){ view.scale=1; view.panX=0; view.panY=0; updateTransform(); if(currentLayout!=='vertical') drawLayout(); }
 
-// 滚轮缩放
-wrapper.addEventListener('wheel',e=>{e.preventDefault(); view.scale=Math.min(2,Math.max(.3,view.scale+(e.deltaY>0?-.08:.08))); updateTransform(); if(currentLayout==='radial') drawRadial();},{passive:!1});
+wrapper.addEventListener('wheel',e=>{e.preventDefault(); view.scale=Math.min(2,Math.max(.3,view.scale+(e.deltaY>0?-.08:.08))); updateTransform(); if(currentLayout!=='vertical') drawLayout();},{passive:!1});
 
-// 拖动
 let isPanning=!1,sx,sy,spx,spy;
 wrapper.addEventListener('mousedown',e=>{
   if(e.target===wrapper||e.target===viewEl||e.target===canvas){
@@ -164,69 +155,59 @@ wrapper.addEventListener('mousedown',e=>{
     wrapper.style.cursor='grabbing';
   }
 });
-window.addEventListener('mousemove',e=>{if(!isPanning)return; view.panX=spx+(e.clientX-sx)*0.7; view.panY=spy+(e.clientY-sy)*0.7; updateTransform(); if(currentLayout==='radial') drawRadial();});
+window.addEventListener('mousemove',e=>{if(!isPanning)return; view.panX=spx+(e.clientX-sx)*0.7; view.panY=spy+(e.clientY-sy)*0.7; updateTransform(); if(currentLayout!=='vertical') drawLayout();});
 window.addEventListener('mouseup',()=>{if(isPanning){isPanning=!1;wrapper.style.cursor='grab'}});
 let tp=null;
 wrapper.addEventListener('touchstart',e=>{if(e.target===wrapper||e.target===viewEl||e.target===canvas){const t=e.touches[0];tp={x:t.clientX,y:t.clientY,panX:view.panX,panY:view.panY}}},{passive:!0});
-wrapper.addEventListener('touchmove',e=>{if(!tp)return;const t=e.touches[0];view.panX=tp.panX+(t.clientX-tp.x)*0.7;view.panY=tp.panY+(t.clientY-tp.y)*0.7;updateTransform();if(currentLayout==='radial')drawRadial();},{passive:!0});
+wrapper.addEventListener('touchmove',e=>{if(!tp)return;const t=e.touches[0];view.panX=tp.panX+(t.clientX-tp.x)*0.7;view.panY=tp.panY+(t.clientY-tp.y)*0.7;updateTransform();if(currentLayout!=='vertical')drawLayout();},{passive:!0});
 wrapper.addEventListener('touchend',()=>{tp=null},{passive:!0});
 
-// ============================================================
-// 布局切换
-// ============================================================
-function switchLayout(){
-  if(currentLayout === 'vertical'){
-    currentLayout = 'radial';
-    viewEl.style.display = 'none';
-    canvas.style.display = 'block';
-    canvas.width = wrapper.clientWidth;
-    canvas.height = wrapper.clientHeight;
-    document.getElementById('modeIcon').textContent = '⬇️';
-    document.getElementById('modeLabel').textContent = '纵向';
-    drawRadial();
-  } else {
-    currentLayout = 'vertical';
-    viewEl.style.display = 'block';
-    canvas.style.display = 'none';
-    document.getElementById('modeIcon').textContent = '🔘';
-    document.getElementById('modeLabel').textContent = '放射';
+// ==================== 布局切换 ====================
+function switchLayout(type){
+  currentLayout=type;
+  if(type==='vertical'){
+    viewEl.style.display='block';
+    canvas.style.display='none';
     renderVertical();
+  } else {
+    viewEl.style.display='none';
+    canvas.style.display='block';
+    canvas.width=wrapper.clientWidth;
+    canvas.height=wrapper.clientHeight;
+    drawLayout();
   }
 }
 
-// ============================================================
-// 纵向模式渲染（原有）
-// ============================================================
+// ==================== 纵向渲染 ====================
 function renderVertical(){
-  // 重新编号
   let counter={val:0};
-  function assignNumbers(node, prefix){
-    if(node.id!=='root'){ counter.val++; node._number = prefix ? prefix+'.'+counter.val : String(counter.val); }
-    if(node.children){ let cc=0; node.children.forEach(child=>{ cc++; assignNumbers(child, node.id==='root' ? '' : (node._number||'')); }); }
+  function assignNumbers(node,prefix){
+    if(node.id!=='root'){counter.val++;node._number=prefix?prefix+'.'+counter.val:String(counter.val);}
+    if(node.children){let cc=0;node.children.forEach(child=>{cc++;assignNumbers(child,node.id==='root'?'':(node._number||''));});}
   }
   assignNumbers(treeData,'');
   viewEl.innerHTML=buildVerticalHTML(treeData,!0);
   document.querySelectorAll('.node-content').forEach(el=>{
-    el.addEventListener('click',e=>{if(e.target.closest('.action-icon'))return; e.stopPropagation(); selectNode(el.dataset.id);});
+    el.addEventListener('click',e=>{if(e.target.closest('.action-icon'))return;e.stopPropagation();selectNode(el.dataset.id);});
   });
   document.querySelectorAll('.toggle-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{e.stopPropagation(); toggleCollapse(btn.dataset.id)});
+    btn.addEventListener('click',e=>{e.stopPropagation();toggleCollapse(btn.dataset.id)});
   });
   document.querySelectorAll('.color-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{e.stopPropagation(); const id=btn.dataset.id; const color=prompt('颜色代码:', findNode(treeData,id)?.color||'#4a6cf7'); if(color) changeNodeColor(id,color); });
+    btn.addEventListener('click',e=>{e.stopPropagation();const id=btn.dataset.id;const color=prompt('颜色:',findNode(treeData,id)?.color||'#4a6cf7');if(color)changeNodeColor(id,color);});
   });
   document.querySelectorAll('.link-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{e.stopPropagation(); const id=btn.dataset.id; const node=findNode(treeData,id); if(!node)return; const url=prompt('链接地址:', node.link||''); if(url!==null){node.link=url.trim(); renderVertical();} });
+    btn.addEventListener('click',e=>{e.stopPropagation();const id=btn.dataset.id;const node=findNode(treeData,id);if(!node)return;const url=prompt('链接:',node.link||'');if(url!==null){node.link=url.trim();renderVertical();}});
   });
   document.querySelectorAll('.node-content').forEach(el=>{if(el.dataset.id===selectedId)el.classList.add('selected')});
   document.getElementById('node-count').textContent=countNodes(treeData)+'节点';
 }
 
 function buildVerticalHTML(node,isRoot){
-  const hasChildren=node.children&&node.children.length>0, isCollapsed=node.collapsed===!0;
+  const hasChildren=node.children&&node.children.length>0,isCollapsed=node.collapsed===!0;
   const color=node.color||(isRoot?'#1a1a2e':'#4a6cf7');
   const number=node._number||'';
-  const displayText = node.id==='root' ? node.text : (number ? number+'. '+node.text : node.text);
+  const displayText=node.id==='root'?node.text:(number?number+'. '+node.text:node.text);
   let html=`<div class=node data-id="${node.id}">`;
   html+=`<div class="node-content ${isRoot?'root':''}" data-id="${node.id}" style="background:${color}">`;
   if(hasChildren)html+=`<span class="toggle-btn ${isCollapsed?'collapsed':''}" data-id="${node.id}">▼</span>`;
@@ -244,191 +225,171 @@ function buildVerticalHTML(node,isRoot){
   return html+'</div>';
 }
 
-// ============================================================
-// 放射模式渲染（Canvas绘制）
-// ============================================================
-function drawRadial(){
-  const w=canvas.width, h=canvas.height;
+// ==================== 多布局绘制（放射/鱼骨/时间轴） ====================
+function drawLayout(){
+  const w=canvas.width,h=canvas.height;
   ctx.clearRect(0,0,w,h);
   if(!treeData)return;
-  // 收集可见节点
+  
   const nodes=[];
-  function collect(node, parentId, depth){
+  function collect(node,parentId,depth){
     if(node.collapsed)return;
-    nodes.push({id:node.id, text:node.text, color:node.color||'#4a6cf7', parentId, depth, collapsed:node.collapsed, children:node.children||[]});
-    if(node.children){
-      node.children.forEach(c=>collect(c, node.id, depth+1));
-    }
+    nodes.push({id:node.id,text:node.text,color:node.color||'#4a6cf7',parentId,depth,children:node.children||[]});
+    if(node.children)node.children.forEach(c=>collect(c,node.id,depth+1));
   }
-  collect(treeData, null, 0);
+  collect(treeData,null,0);
   const rootNode=nodes.find(n=>n.id==='root');
   if(!rootNode)return;
   
-  const cx=w/2, cy=h/2;
-  const baseRadius=Math.min(w,h)*0.25;
+  const cx=w/2,cy=h/2;
   
-  // 分配角度
-  function assignAngles(nodeList, parentId, startAngle, endAngle, depth){
-    const children=nodeList.filter(n=>n.parentId===parentId);
-    if(children.length===0)return;
-    const range=endAngle-startAngle;
-    const step=range/children.length;
-    children.forEach((child,i)=>{
-      child.angle=startAngle+step*(i+0.5);
-      child.radius=baseRadius*(depth+1)*0.7;
-      assignAngles(nodeList, child.id, child.angle-Math.PI/4, child.angle+Math.PI/4, depth+1);
-    });
+  if(currentLayout==='radial'){
+    drawRadial(nodes,rootNode,cx,cy,w,h);
+  } else if(currentLayout==='fishbone'){
+    drawFishbone(nodes,rootNode,cx,cy,w,h);
+  } else if(currentLayout==='timeline'){
+    drawTimeline(nodes,rootNode,cx,cy,w,h);
   }
-  rootNode.angle=0;
-  rootNode.radius=0;
-  rootNode.x=cx; rootNode.y=cy;
-  assignAngles(nodes, 'root', -Math.PI*0.6, Math.PI*0.6, 1);
-  
-  // 计算每个节点的坐标
-  nodes.forEach(n=>{
-    if(n.id==='root')return;
-    const parent=nodes.find(p=>p.id===n.parentId);
-    if(parent){
-      const ang=n.angle||0;
-      const r=n.radius||60;
-      n.x=parent.x+Math.cos(ang)*r;
-      n.y=parent.y+Math.sin(ang)*r;
-    }
-  });
-  
-  // 绘制连线
-  ctx.lineWidth=2;
-  ctx.strokeStyle='#c0c8d8';
-  nodes.forEach(n=>{
-    if(n.id==='root')return;
-    const parent=nodes.find(p=>p.id===n.parentId);
-    if(parent && parent.x!==undefined && parent.y!==undefined){
-      ctx.beginPath();
-      ctx.moveTo(parent.x, parent.y);
-      ctx.lineTo(n.x, n.y);
-      ctx.stroke();
-    }
-  });
-  
-  // 绘制节点
-  nodes.forEach(n=>{
-    const x=n.x, y=n.y;
-    if(x===undefined||y===undefined)return;
-    const isRoot=n.id==='root';
-    const radius=isRoot?28:18;
-    const color=n.color||(isRoot?'#1a1a2e':'#4a6cf7');
-    // 阴影
-    ctx.shadowColor='rgba(0,0,0,0.06)';
-    ctx.shadowBlur=12;
-    ctx.shadowOffsetY=3;
-    // 圆
-    ctx.beginPath();
-    ctx.arc(x,y,radius,0,Math.PI*2);
-    ctx.fillStyle=color;
-    ctx.fill();
-    ctx.shadowColor='transparent';
-    // 边框（选中）
-    if(n.id===selectedId){
-      ctx.strokeStyle='#f5a623';
-      ctx.lineWidth=3;
-      ctx.beginPath();
-      ctx.arc(x,y,radius+4,0,Math.PI*2);
-      ctx.stroke();
-    }
-    // 文字
-    ctx.fillStyle='#fff';
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.font=isRoot?'bold 14px sans-serif':'12px sans-serif';
-    const displayText = n.text.length>6 ? n.text.slice(0,6)+'..' : n.text;
-    ctx.fillText(displayText, x, y+1);
-    // 折叠指示
-    if(n.children && n.children.length>0){
-      ctx.fillStyle='rgba(255,255,255,0.5)';
-      ctx.font='10px sans-serif';
-      ctx.fillText('▼', x, y+radius+14);
-    }
-  });
-  
-  // 点击事件绑定（通过canvas坐标映射）
-  canvas._clickNodes = nodes;
+  canvas._clickNodes=nodes;
 }
 
-// Canvas点击选中
-canvas.addEventListener('click', function(e){
-  if(currentLayout!=='radial')return;
-  const rect=canvas.getBoundingClientRect();
-  const scaleX=canvas.width/rect.width;
-  const scaleY=canvas.height/rect.height;
-  // 考虑平移和缩放
-  const mx=(e.clientX-rect.left)*scaleX;
-  const my=(e.clientY-rect.top)*scaleY;
-  // 计算实际画布坐标（减去平移，除以缩放）
-  const cx=(mx - view.panX*scaleX)/view.scale;
-  const cy=(my - view.panY*scaleY)/view.scale;
-  // 查找点击的节点
-  const nodes=canvas._clickNodes||[];
-  let found=null;
-  for(let n of nodes){
-    if(n.x===undefined||n.y===undefined)continue;
-    const dx=cx-n.x, dy=cy-n.y;
-    const dist=Math.sqrt(dx*dx+dy*dy);
-    const r=n.id==='root'?28:18;
-    if(dist<r+6){ found=n; break; }
+// --- 放射布局 ---
+function drawRadial(nodes,root,cx,cy,w,h){
+  const baseR=Math.min(w,h)*0.22;
+  function assignAngles(list,pid,sa,ea,depth){
+    const children=list.filter(n=>n.parentId===pid);
+    if(children.length===0)return;
+    const range=ea-sa;
+    const step=range/children.length;
+    children.forEach((child,i)=>{
+      child.angle=sa+step*(i+0.5);
+      child.radius=baseR*(depth+1)*0.6;
+      assignAngles(list,child.id,child.angle-Math.PI/3,child.angle+Math.PI/3,depth+1);
+    });
   }
-  if(found){
-    selectedId=found.id;
-    drawRadial();
-  }
-});
+  root.angle=0;root.radius=0;root.x=cx;root.y=cy;
+  assignAngles(nodes,'root',-Math.PI*0.55,Math.PI*0.55,1);
+  nodes.forEach(n=>{
+    if(n.id==='root')return;
+    const parent=nodes.find(p=>p.id===n.parentId);
+    if(parent){const ang=n.angle||0;const r=n.radius||50;n.x=parent.x+Math.cos(ang)*r;n.y=parent.y+Math.sin(ang)*r;}
+  });
+  drawNodesOnCanvas(nodes);
+}
 
-// ============================================================
-// 通用操作函数
-// ============================================================
-function selectNode(id){selectedId=id; if(currentLayout==='vertical')renderVertical(); else drawRadial();}
-function findNode(node,id){if(node.id===id)return node; if(node.children){for(let c of node.children){const f=findNode(c,id); if(f)return f}}return null}
-function findParent(node,targetId,p=null){if(node.id===targetId)return p; if(node.children){for(let c of node.children){const f=findParent(c,targetId,node); if(f!==undefined)return f}}return undefined}
-function countNodes(node){let c=1; if(node.children)node.children.forEach(n=>c+=countNodes(n)); return c}
+// --- 鱼骨布局 ---
+function drawFishbone(nodes,root,cx,cy,w,h){
+  const levelHeight=Math.min(h/(nodes.length+2),50);
+  let idx=0;
+  function place(node,depth,startY){
+    if(node.id==='root'){node.x=cx-40;node.y=cy;return;}
+    const children=nodes.filter(n=>n.parentId===node.id);
+    const yOffset=children.length>1 ? -(children.length-1)*levelHeight/2 : 0;
+    node.x=(depth)*140+60;
+    node.y=startY+yOffset;
+    children.forEach((child,i)=>{
+      place(child,depth+1,startY+i*levelHeight);
+    });
+  }
+  const rootChildren=nodes.filter(n=>n.parentId==='root');
+  root.x=30;root.y=cy;
+  rootChildren.forEach((child,i)=>{
+    place(child,1,cy-(rootChildren.length-1)*levelHeight/2+i*levelHeight);
+  });
+  drawNodesOnCanvas(nodes);
+}
+
+// --- 时间轴布局 ---
+function drawTimeline(nodes,root,cx,cy,w,h){
+  const stepY=Math.min(h/(countNodes(treeData)+2),36);
+  let idx=0;
+  function place(node){
+    if(node.id==='root'){node.x=20;node.y=cy;return;}
+    const parent=nodes.find(p=>p.id===node.parentId);
+    if(parent){
+      const siblings=nodes.filter(n=>n.parentId===parent.id);
+      const sIdx=siblings.indexOf(node);
+      const total=siblings.length;
+      const spread=Math.min((total-1)*stepY*0.6,60);
+      node.x=(parent.x||20)+80;
+      node.y=(parent.y||cy)-spread/2+sIdx*stepY*0.6;
+    }
+    if(node.children&&node.children.length>0){
+      node.children.forEach(c=>{const cn=nodes.find(n=>n.id===c.id);if(cn)place(cn);});
+    }
+  }
+  root.x=20;root.y=cy;
+  if(root.children)root.children.forEach(c=>{const cn=nodes.find(n=>n.id===c.id);if(cn)place(cn);});
+  drawNodesOnCanvas(nodes);
+}
+
+// --- 通用画布绘制 ---
+function drawNodesOnCanvas(nodes){
+  // 连线
+  ctx.lineWidth=1.5;ctx.strokeStyle='#c8d0dc';
+  nodes.forEach(n=>{
+    if(n.id==='root')return;
+    const parent=nodes.find(p=>p.id===n.parentId);
+    if(parent&&parent.x!==undefined){
+      ctx.beginPath();ctx.moveTo(parent.x,parent.y);ctx.lineTo(n.x,n.y);ctx.stroke();
+    }
+  });
+  // 节点
+  nodes.forEach(n=>{
+    const x=n.x,y=n.y;if(x===undefined||y===undefined)return;
+    const isRoot=n.id==='root';
+    const r=isRoot?24:16;
+    const color=n.color||(isRoot?'#1a1a2e':'#4a6cf7');
+    ctx.shadowColor='rgba(0,0,0,0.05)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+    ctx.shadowColor='transparent';
+    if(n.id===selectedId){
+      ctx.strokeStyle='#f5a623';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,r+4,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font=isRoot?'bold 13px sans-serif':'11px sans-serif';
+    const txt=n.text.length>5?n.text.slice(0,5)+'..':n.text;
+    ctx.fillText(txt,x,y+1);
+  });
+}
+
+// ==================== 操作函数 ====================
+function selectNode(id){selectedId=id;if(currentLayout==='vertical')renderVertical();else drawLayout();}
+function findNode(node,id){if(node.id===id)return node;if(node.children){for(let c of node.children){const f=findNode(c,id);if(f)return f}}return null}
+function findParent(node,targetId,p=null){if(node.id===targetId)return p;if(node.children){for(let c of node.children){const f=findParent(c,targetId,node);if(f!==undefined)return f}}return undefined}
+function countNodes(node){let c=1;if(node.children)node.children.forEach(n=>c+=countNodes(n));return c}
 
 function addChild(){
-  const p=findNode(treeData,selectedId); if(!p)return alert('请选中节点');
-  if(!p.children)p.children=[]; p.children.push({id:'id-'+(idCounter++),text:'新节点',collapsed:!1,color:'#4a6cf7',children:[]});
-  if(currentLayout==='vertical')renderVertical(); else drawRadial();
+  const p=findNode(treeData,selectedId);if(!p)return alert('请选中节点');
+  if(!p.children)p.children=[];p.children.push({id:'id-'+(idCounter++),text:'新节点',collapsed:!1,color:'#4a6cf7',children:[]});
+  if(currentLayout==='vertical')renderVertical();else drawLayout();
 }
 function addSibling(){
   if(selectedId==='root')return alert('根节点不能加兄弟');
-  const p=findParent(treeData,selectedId); if(!p)return;
+  const p=findParent(treeData,selectedId);if(!p)return;
   const idx=p.children.findIndex(c=>c.id===selectedId);
   p.children.splice(idx+1,0,{id:'id-'+(idCounter++),text:'兄弟节点',collapsed:!1,color:'#4a6cf7',children:[]});
-  if(currentLayout==='vertical')renderVertical(); else drawRadial();
+  if(currentLayout==='vertical')renderVertical();else drawLayout();
 }
 function editNode(){
-  const n=findNode(treeData,selectedId); if(!n)return;
-  const t=prompt('修改文字:',n.text); if(t!==null&&t.trim()!==''){n.text=t.trim(); if(currentLayout==='vertical')renderVertical(); else drawRadial();}
+  const n=findNode(treeData,selectedId);if(!n)return;
+  const t=prompt('修改文字:',n.text);if(t!==null&&t.trim()!==''){n.text=t.trim();if(currentLayout==='vertical')renderVertical();else drawLayout();}
 }
 function deleteNode(){
   if(selectedId==='root')return alert('根节点不能删');
   if(!confirm('确定删除？'))return;
-  const p=findParent(treeData,selectedId); if(!p)return;
+  const p=findParent(treeData,selectedId);if(!p)return;
   p.children=p.children.filter(c=>c.id!==selectedId);
   selectedId=p.id;
-  if(currentLayout==='vertical')renderVertical(); else drawRadial();
+  if(currentLayout==='vertical')renderVertical();else drawLayout();
 }
 function toggleCollapse(id){
-  const n=findNode(treeData,id); if(!n)return;
+  const n=findNode(treeData,id);if(!n)return;
   n.collapsed=!n.collapsed;
-  if(currentLayout==='vertical')renderVertical(); else drawRadial();
+  if(currentLayout==='vertical')renderVertical();else drawLayout();
 }
-function toggleAll(exp){
-  function walk(n){n.collapsed=!exp; if(n.children)n.children.forEach(walk)}
-  walk(treeData);
-  if(currentLayout==='vertical')renderVertical(); else drawRadial();
-}
-function changeNodeColor(id,color){
-  const n=findNode(treeData,id); if(!n)return;
-  n.color=color;
-  if(currentLayout==='vertical')renderVertical(); else drawRadial();
-}
+function toggleAll(exp){function walk(n){n.collapsed=!exp;if(n.children)n.children.forEach(walk)}walk(treeData);if(currentLayout==='vertical')renderVertical();else drawLayout();}
+function changeNodeColor(id,color){const n=findNode(treeData,id);if(!n)return;n.color=color;if(currentLayout==='vertical')renderVertical();else drawLayout();}
 
 function searchNodes(keyword){
   const kw=keyword.trim().toLowerCase();
@@ -436,60 +397,56 @@ function searchNodes(keyword){
     document.querySelectorAll('.node-content').forEach(el=>{
       el.classList.remove('highlight');
       const txt=el.textContent.replace(/[▼🎨🔗]/g,'').trim().toLowerCase();
-      if(kw && txt.includes(kw)){
-        el.classList.add('highlight');
-        let p=findParent(treeData,el.dataset.id);
-        while(p){if(p.collapsed)p.collapsed=!1; p=findParent(treeData,p.id)}
-      }
+      if(kw&&txt.includes(kw)){el.classList.add('highlight');let p=findParent(treeData,el.dataset.id);while(p){if(p.collapsed)p.collapsed=!1;p=findParent(treeData,p.id)}}
     });
-  } else {
-    // 放射模式搜索：重新绘制，高亮匹配节点（在drawRadial里处理高亮）
-    drawRadial();
-  }
+  } else { drawLayout(); }
 }
 
-// ============================================================
-// 导入
-// ============================================================
+// ==================== 导入导出 ====================
 function showImportModal(){document.getElementById('importModal').classList.add('active')}
 function closeImportModal(){document.getElementById('importModal').classList.remove('active')}
 function importFromText(){
   const text=document.getElementById('importText').value;
   if(!text.trim())return alert('请输入内容');
   const lines=text.split('\n').filter(l=>l.trim());
-  const root={id:'root', text:'📖 书摘', collapsed:!1, color:'#1a1a2e', children:[]};
-  const stack=[{node:root, level:0}];
+  const root={id:'root',text:'📖 书摘',collapsed:!1,color:'#1a1a2e',children:[]};
+  const stack=[{node:root,level:0}];
   lines.forEach(line=>{
     const indent=line.match(/^[\s\t]*/)[0].length;
     const level=Math.floor(indent/2);
-    const text=line.trim();
-    const newNode={id:'id-'+(idCounter++), text, collapsed:!1, color:'#4a6cf7', children:[]};
-    while(stack.length>1 && stack[stack.length-1].level>=level) stack.pop();
+    const txt=line.trim();
+    const newNode={id:'id-'+(idCounter++),text:txt,collapsed:!1,color:'#4a6cf7',children:[]};
+    while(stack.length>1&&stack[stack.length-1].level>=level)stack.pop();
     const parent=stack[stack.length-1].node;
     if(!parent.children)parent.children=[];
     parent.children.push(newNode);
-    stack.push({node:newNode, level});
+    stack.push({node:newNode,level});
   });
-  treeData=root; selectedId='root'; closeImportModal();
-  if(currentLayout==='vertical')renderVertical(); else drawRadial();
+  treeData=root;selectedId='root';closeImportModal();
+  if(currentLayout==='vertical')renderVertical();else drawLayout();
 }
-
 function exportImage(){alert('📸 请使用手机截图功能保存');}
 
-// ============================================================
-// 窗口resize
-// ============================================================
-window.addEventListener('resize',()=>{
-  if(currentLayout==='radial'){
-    canvas.width=wrapper.clientWidth;
-    canvas.height=wrapper.clientHeight;
-    drawRadial();
+// ==================== Canvas点击 ====================
+canvas.addEventListener('click',function(e){
+  if(currentLayout==='vertical')return;
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/rect.width,scaleY=canvas.height/rect.height;
+  const mx=(e.clientX-rect.left)*scaleX,my=(e.clientY-rect.top)*scaleY;
+  const cx=(mx-view.panX*scaleX)/view.scale,cy=(my-view.panY*scaleY)/view.scale;
+  const nodes=canvas._clickNodes||[];
+  for(let n of nodes){
+    if(n.x===undefined||n.y===undefined)continue;
+    const dx=cx-n.x,dy=cy-n.y;
+    if(Math.sqrt(dx*dx+dy*dy)<(n.id==='root'?28:20)){selectedId=n.id;drawLayout();break;}
   }
 });
 
-// ============================================================
-// 启动
-// ============================================================
+window.addEventListener('resize',()=>{
+  if(currentLayout!=='vertical'){canvas.width=wrapper.clientWidth;canvas.height=wrapper.clientHeight;drawLayout();}
+});
+
+// ==================== 启动 ====================
 renderVertical();
 updateTransform();
 </script>
