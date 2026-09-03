@@ -3,27 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>放射思维导图</title>
+<title>XMind 风格 · 放射导图</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#333}
+body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f0f2f5;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#333}
 
-#header{background:#fff;padding:6px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;flex-shrink:0;height:40px}
+#header{background:#fff;padding:6px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e8eaed;flex-shrink:0;height:40px}
 #header h1{font-size:16px;font-weight:600;color:#1a1a2e}
+#header .badge{font-size:12px;color:#999}
 
 #canvas-wrapper{flex:1;overflow:hidden;position:relative;background:#fafbfc;touch-action:none;cursor:grab}
 #canvas-wrapper:active{cursor:grabbing}
-#radial-canvas{width:100%;height:100%;display:block;background:#fafbfc;transform-origin:0 0;touch-action:none}
+#radial-canvas{width:100%;height:100%;display:block;transform-origin:0 0;touch-action:none}
 
-/* 底部工具栏 */
-#bottom-toolbar{background:#fff;border-top:1px solid #eee;display:flex;flex-wrap:wrap;justify-content:space-around;padding:4px 0 env(safe-area-inset-bottom);flex-shrink:0}
-#bottom-toolbar .group{display:flex;gap:3px;align-items:center;flex-wrap:wrap}
+#bottom-toolbar{background:#fff;border-top:1px solid #e8eaed;display:flex;flex-wrap:wrap;justify-content:space-around;padding:4px 0 env(safe-area-inset-bottom);flex-shrink:0}
+#bottom-toolbar .group{display:flex;gap:2px;align-items:center;flex-wrap:wrap}
 #bottom-toolbar button{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;font-size:10px;color:#666;padding:4px 10px;min-height:38px;min-width:38px;touch-action:manipulation;border-radius:8px}
 #bottom-toolbar button .icon{font-size:18px;line-height:1.2}
 #bottom-toolbar button .label{margin-top:1px;font-size:9px}
-#bottom-toolbar button:active{background:#f0f2f5;color:#4a6cf7}
+#bottom-toolbar button:active{background:#e8eaed;color:#4a6cf7}
 #bottom-toolbar .del:active{color:#e74c3c}
-#bottom-toolbar .zoom-btn{background:#f5f7fa;border-radius:20px;padding:2px 12px;flex-direction:row;gap:4px;min-height:30px}
+#bottom-toolbar .zoom-btn{background:#f0f2f5;border-radius:20px;padding:2px 12px;flex-direction:row;gap:4px;min-height:30px}
 #bottom-toolbar .zoom-btn .icon{font-size:14px}
 
 .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:none;justify-content:center;align-items:center;z-index:999;backdrop-filter:blur(3px)}
@@ -31,7 +31,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .modal-box{background:#fff;border-radius:16px;padding:20px;width:92%;max-width:380px;max-height:80vh;overflow-y:auto}
 .modal-box h3{font-size:17px;margin-bottom:4px}
 .modal-box p{font-size:13px;color:#888;margin:4px 0 12px}
-.modal-box textarea{width:100%;height:140px;padding:10px;border:1px solid #e8ecf0;border-radius:10px;font-size:13px;resize:vertical;font-family:inherit}
+.modal-box textarea{width:100%;height:140px;padding:10px;border:1px solid #ddd;border-radius:10px;font-size:13px;resize:vertical;font-family:inherit}
 .modal-box .btn-row{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
 .modal-box .btn-row button{padding:8px 20px;border-radius:20px;border:none;font-size:13px;font-weight:500;min-height:36px}
 .modal-box .btn-row .primary{background:#4a6cf7;color:#fff}
@@ -41,8 +41,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <body>
 
 <div id="header">
-  <h1>◎ 放射导图</h1>
-  <span id="node-count" style="font-size:12px;color:#888;">0节点</span>
+  <h1>🧠 XMind 放射</h1>
+  <span class="badge" id="node-count">0 节点</span>
 </div>
 
 <div id="canvas-wrapper">
@@ -71,9 +71,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <div class="modal" id="importModal">
   <div class="modal-box">
-    <h3>📥 导入文本</h3>
-    <p>每行一个知识点，<strong>缩进表示层级</strong>（2空格或Tab）</p>
-    <textarea id="importText" placeholder="年度计划&#10;  学习&#10;    前端&#10;  健身"></textarea>
+    <h3>📥 导入大纲</h3>
+    <p>缩进表示层级（2空格或1 Tab）</p>
+    <textarea id="importText" placeholder="年度计划&#10;  学习&#10;    前端&#10;    英语&#10;  健身&#10;    跑步"></textarea>
     <div class="btn-row">
       <button class="secondary" onclick="closeImportModal()">取消</button>
       <button class="primary" onclick="importFromText()">生成</button>
@@ -83,19 +83,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <script>
 // ============================================================
-// 数据
+// 数据模型
 // ============================================================
 let treeData = {
-  id:'root', text:'🚀 我的项目', collapsed:!1, color:'#1a1a2e',
-  children:[
-    { id:'n1', text:'需求分析', collapsed:!1, color:'#4a6cf7', children:[
-      { id:'n1-1', text:'用户调研', collapsed:!1, color:'#6c8cff', children:[] }
-    ]},
-    { id:'n2', text:'技术选型', collapsed:!1, color:'#4a6cf7', children:[
-      { id:'n2-1', text:'前端', collapsed:!1, color:'#6c8cff', children:[] },
-      { id:'n2-2', text:'后端', collapsed:!1, color:'#6c8cff', children:[] }
-    ]},
-    { id:'n3', text:'部署上线', collapsed:!1, color:'#4a6cf7', children:[] }
+  id: 'root',
+  text: '🎯 中心主题',
+  collapsed: false,
+  color: '#2c3e50',
+  children: [
+    {
+      id: 'n1',
+      text: '需求分析',
+      collapsed: false,
+      color: '#3498db',
+      children: [
+        { id: 'n1-1', text: '用户调研', collapsed: false, color: '#1abc9c', children: [] },
+        { id: 'n1-2', text: '竞品分析', collapsed: false, color: '#1abc9c', children: [] }
+      ]
+    },
+    {
+      id: 'n2',
+      text: '技术选型',
+      collapsed: false,
+      color: '#e67e22',
+      children: [
+        { id: 'n2-1', text: '前端框架', collapsed: false, color: '#f39c12', children: [] },
+        { id: 'n2-2', text: '后端语言', collapsed: false, color: '#f39c12', children: [] }
+      ]
+    },
+    {
+      id: 'n3',
+      text: '部署上线',
+      collapsed: false,
+      color: '#9b59b6',
+      children: [
+        { id: 'n3-1', text: '服务器配置', collapsed: false, color: '#8e44ad', children: [] }
+      ]
+    }
   ]
 };
 let selectedId = 'root';
@@ -122,7 +146,6 @@ function zoomIn() { view.scale = Math.min(2, view.scale + 0.15); updateTransform
 function zoomOut() { view.scale = Math.max(0.3, view.scale - 0.15); updateTransform(); drawRadial(); }
 function resetView() { view.scale = 1; view.panX = 0; view.panY = 0; updateTransform(); drawRadial(); }
 
-// 滚轮缩放
 wrapper.addEventListener('wheel', function(e) {
   e.preventDefault();
   view.scale = Math.min(2, Math.max(0.3, view.scale + (e.deltaY > 0 ? -0.08 : 0.08)));
@@ -130,33 +153,26 @@ wrapper.addEventListener('wheel', function(e) {
   drawRadial();
 }, { passive: false });
 
-// 拖动平移
+// 拖动（鼠标+触屏）
 let isPanning = false, startX, startY, startPanX, startPanY;
-
 wrapper.addEventListener('mousedown', function(e) {
   if (e.target === canvas || e.target === wrapper) {
     isPanning = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    startPanX = view.panX;
-    startPanY = view.panY;
+    startX = e.clientX; startY = e.clientY;
+    startPanX = view.panX; startPanY = view.panY;
     wrapper.style.cursor = 'grabbing';
   }
 });
-
 window.addEventListener('mousemove', function(e) {
   if (!isPanning) return;
   view.panX = startPanX + (e.clientX - startX) * 0.7;
   view.panY = startPanY + (e.clientY - startY) * 0.7;
-  updateTransform();
-  drawRadial();
+  updateTransform(); drawRadial();
 });
-
 window.addEventListener('mouseup', function() {
   if (isPanning) { isPanning = false; wrapper.style.cursor = 'grab'; }
 });
 
-// 触摸拖动（手机）
 let touchPan = null;
 wrapper.addEventListener('touchstart', function(e) {
   if (e.target === canvas || e.target === wrapper) {
@@ -164,29 +180,24 @@ wrapper.addEventListener('touchstart', function(e) {
     touchPan = { x: t.clientX, y: t.clientY, panX: view.panX, panY: view.panY };
   }
 }, { passive: true });
-
 wrapper.addEventListener('touchmove', function(e) {
   if (!touchPan) return;
   const t = e.touches[0];
   view.panX = touchPan.panX + (t.clientX - touchPan.x) * 0.7;
   view.panY = touchPan.panY + (t.clientY - touchPan.y) * 0.7;
-  updateTransform();
-  drawRadial();
+  updateTransform(); drawRadial();
 }, { passive: true });
-
-wrapper.addEventListener('touchend', function() {
-  touchPan = null;
-}, { passive: true });
+wrapper.addEventListener('touchend', function() { touchPan = null; }, { passive: true });
 
 // ============================================================
-// 核心：放射布局绘制
+// 核心绘制（XMind 风格）
 // ============================================================
 function drawRadial() {
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
   if (!treeData) return;
 
-  // 收集可见节点
+  // 1. 收集可见节点
   const nodes = [];
   function collect(node, parentId, depth) {
     if (node.collapsed) return;
@@ -211,7 +222,7 @@ function drawRadial() {
   const cx = w / 2, cy = h / 2;
   const baseRadius = Math.min(w, h) * 0.22;
 
-  // 分配角度和半径
+  // 2. 递归分配角度和半径（角度范围根据子节点数量动态调整）
   function assignAngles(list, parentId, startAngle, endAngle, depth) {
     var children = list.filter(function(n) { return n.parentId === parentId; });
     if (children.length === 0) return;
@@ -219,8 +230,12 @@ function drawRadial() {
     var step = range / children.length;
     children.forEach(function(child, i) {
       child.angle = startAngle + step * (i + 0.5);
-      child.radius = baseRadius * (depth + 1) * 0.6;
-      assignAngles(list, child.id, child.angle - Math.PI / 3.5, child.angle + Math.PI / 3.5, depth + 1);
+      // 半径随深度增加，但避免过远
+      var r = baseRadius * (depth + 0.8) * 0.8;
+      child.radius = Math.min(r, Math.max(w, h) * 0.35);
+      // 继续分配子节点
+      var halfRange = Math.min(step * 0.6, Math.PI / 3);
+      assignAngles(list, child.id, child.angle - halfRange, child.angle + halfRange, depth + 1);
     });
   }
 
@@ -228,91 +243,112 @@ function drawRadial() {
   rootNode.radius = 0;
   rootNode.x = cx;
   rootNode.y = cy;
-  assignAngles(nodes, 'root', -Math.PI * 0.55, Math.PI * 0.55, 1);
+  assignAngles(nodes, 'root', -Math.PI * 0.5, Math.PI * 0.5, 1);
 
-  // 计算坐标
+  // 3. 计算坐标
   nodes.forEach(function(n) {
     if (n.id === 'root') return;
     var parent = nodes.find(function(p) { return p.id === n.parentId; });
-    if (parent) {
+    if (parent && parent.x !== undefined) {
       var ang = n.angle || 0;
-      var r = n.radius || 50;
+      var r = n.radius || 60;
       n.x = parent.x + Math.cos(ang) * r;
       n.y = parent.y + Math.sin(ang) * r;
     }
   });
 
-  // 绘制连线
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#c8d0dc';
+  // 4. 绘制连线（二次贝塞尔，更平滑）
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = '#b0c4de';
   nodes.forEach(function(n) {
     if (n.id === 'root') return;
     var parent = nodes.find(function(p) { return p.id === n.parentId; });
     if (parent && parent.x !== undefined && parent.y !== undefined) {
+      var dx = n.x - parent.x, dy = n.y - parent.y;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      // 控制点偏移（使曲线向外凸）
+      var cpDist = dist * 0.4;
+      var midX = (parent.x + n.x) / 2 + dy * 0.15;
+      var midY = (parent.y + n.y) / 2 - dx * 0.15;
       ctx.beginPath();
       ctx.moveTo(parent.x, parent.y);
-      ctx.lineTo(n.x, n.y);
+      ctx.quadraticCurveTo(midX, midY, n.x, n.y);
       ctx.stroke();
     }
   });
 
-  // 绘制节点
+  // 5. 绘制节点（圆角矩形，带阴影）
   nodes.forEach(function(n) {
     var x = n.x, y = n.y;
     if (x === undefined || y === undefined) return;
     var isRoot = (n.id === 'root');
-    var radius = isRoot ? 28 : 18;
-    var color = n.color || (isRoot ? '#1a1a2e' : '#4a6cf7');
+    var w = isRoot ? 100 : 70;
+    var h = isRoot ? 40 : 32;
+    var radius = 10;
+    var color = n.color || (isRoot ? '#2c3e50' : '#4a6cf7');
 
     // 阴影
-    ctx.shadowColor = 'rgba(0,0,0,0.06)';
+    ctx.shadowColor = 'rgba(0,0,0,0.08)';
     ctx.shadowBlur = 12;
     ctx.shadowOffsetY = 3;
-
-    // 圆
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.moveTo(x - w/2 + radius, y - h/2);
+    ctx.lineTo(x + w/2 - radius, y - h/2);
+    ctx.quadraticCurveTo(x + w/2, y - h/2, x + w/2, y - h/2 + radius);
+    ctx.lineTo(x + w/2, y + h/2 - radius);
+    ctx.quadraticCurveTo(x + w/2, y + h/2, x + w/2 - radius, y + h/2);
+    ctx.lineTo(x - w/2 + radius, y + h/2);
+    ctx.quadraticCurveTo(x - w/2, y + h/2, x - w/2, y + h/2 - radius);
+    ctx.lineTo(x - w/2, y - h/2 + radius);
+    ctx.quadraticCurveTo(x - w/2, y - h/2, x - w/2 + radius, y - h/2);
+    ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
     ctx.shadowColor = 'transparent';
 
-    // 选中边框
+    // 选中边框（加粗亮色）
     if (n.id === selectedId) {
       ctx.strokeStyle = '#f5a623';
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
+      ctx.moveTo(x - w/2 + radius, y - h/2);
+      ctx.lineTo(x + w/2 - radius, y - h/2);
+      ctx.quadraticCurveTo(x + w/2, y - h/2, x + w/2, y - h/2 + radius);
+      ctx.lineTo(x + w/2, y + h/2 - radius);
+      ctx.quadraticCurveTo(x + w/2, y + h/2, x + w/2 - radius, y + h/2);
+      ctx.lineTo(x - w/2 + radius, y + h/2);
+      ctx.quadraticCurveTo(x - w/2, y + h/2, x - w/2, y + h/2 - radius);
+      ctx.lineTo(x - w/2, y - h/2 + radius);
+      ctx.quadraticCurveTo(x - w/2, y - h/2, x - w/2 + radius, y - h/2);
+      ctx.closePath();
       ctx.stroke();
     }
 
     // 文字
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = isRoot ? 'bold 15px sans-serif' : '12px sans-serif';
-
+    ctx.font = isRoot ? 'bold 15px "Segoe UI",sans-serif' : '13px "Segoe UI",sans-serif';
     var displayText = n.text;
-    // 文字自适应：超过6个字截断
-    if (displayText.length > 8) {
-      displayText = displayText.slice(0, 7) + '..';
-    }
+    if (displayText.length > 8) displayText = displayText.slice(0, 7) + '…';
     ctx.fillText(displayText, x, y + 1);
 
-    // 子节点数量指示
-    if (n.children && n.children.length > 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '9px sans-serif';
-      ctx.fillText('●', x, y + radius + 12);
+    // 子节点数量小圆点（有子节点时显示）
+    if (n.children && n.children.length > 0 && !n.collapsed) {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.beginPath();
+      ctx.arc(x + w/2 + 6, y - h/2 + 6, 4, 0, 2*Math.PI);
+      ctx.fill();
     }
   });
 
-  // 保存节点数据用于点击检测
+  // 保存节点数据供点击检测
   canvas._clickNodes = nodes;
-  document.getElementById('node-count').textContent = nodes.length + '节点';
+  document.getElementById('node-count').textContent = nodes.length + ' 节点';
 }
 
 // ============================================================
-// Canvas 点击选中
+// 交互：点击选中
 // ============================================================
 canvas.addEventListener('click', function(e) {
   var rect = canvas.getBoundingClientRect();
@@ -328,9 +364,9 @@ canvas.addEventListener('click', function(e) {
     var n = nodes[i];
     if (n.x === undefined || n.y === undefined) continue;
     var dx = cx - n.x, dy = cy - n.y;
-    var dist = Math.sqrt(dx * dx + dy * dy);
-    var r = (n.id === 'root') ? 28 : 18;
-    if (dist < r + 8) {
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    var threshold = (n.id === 'root') ? 30 : 25;
+    if (dist < threshold) {
       selectedId = n.id;
       drawRadial();
       return;
@@ -338,8 +374,39 @@ canvas.addEventListener('click', function(e) {
   }
 });
 
+// 双击编辑（简单实现）
+canvas.addEventListener('dblclick', function(e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / rect.width;
+  var scaleY = canvas.height / rect.height;
+  var mx = (e.clientX - rect.left) * scaleX;
+  var my = (e.clientY - rect.top) * scaleY;
+  var cx = (mx - view.panX * scaleX) / view.scale;
+  var cy = (my - view.panY * scaleY) / view.scale;
+  var nodes = canvas._clickNodes || [];
+  for (var i = 0; i < nodes.length; i++) {
+    var n = nodes[i];
+    if (n.x === undefined || n.y === undefined) continue;
+    var dx = cx - n.x, dy = cy - n.y;
+    if (Math.sqrt(dx*dx + dy*dy) < 30) {
+      editNodeById(n.id);
+      return;
+    }
+  }
+});
+
+function editNodeById(id) {
+  var node = findNode(treeData, id);
+  if (!node) return;
+  var newText = prompt('修改文字:', node.text);
+  if (newText !== null && newText.trim() !== '') {
+    node.text = newText.trim();
+    drawRadial();
+  }
+}
+
 // ============================================================
-// 操作函数
+// 数据操作
 // ============================================================
 function findNode(node, id) {
   if (node.id === id) return node;
@@ -374,22 +441,29 @@ function countNodes(node) {
   return c;
 }
 
+// ---- 添加子节点 ----
 function addChild() {
   var parent = findNode(treeData, selectedId);
-  if (!parent) { alert('请先选中一个节点'); return; }
+  if (!parent) { alert('请先点击选中一个节点'); return; }
   if (!parent.children) parent.children = [];
+  // 自动生成颜色（基于父级颜色微调，或使用预设）
+  var color = parent.color || '#4a6cf7';
+  // 简单的亮化
+  var colors = ['#3498db','#e67e22','#2ecc71','#9b59b6','#1abc9c','#e74c3c','#f39c12','#16a085'];
+  var newColor = colors[parent.children.length % colors.length];
   parent.children.push({
     id: 'id-' + (idCounter++),
-    text: '新节点',
+    text: '新分支',
     collapsed: false,
-    color: '#4a6cf7',
+    color: newColor,
     children: []
   });
   drawRadial();
 }
 
+// ---- 添加兄弟节点 ----
 function addSibling() {
-  if (selectedId === 'root') { alert('根节点不能加兄弟'); return; }
+  if (selectedId === 'root') { alert('根节点不能添加兄弟'); return; }
   var parent = findParent(treeData, selectedId);
   if (!parent) return;
   var idx = -1;
@@ -397,17 +471,31 @@ function addSibling() {
     if (parent.children[i].id === selectedId) { idx = i; break; }
   }
   if (idx === -1) return;
+  var colors = ['#3498db','#e67e22','#2ecc71','#9b59b6','#1abc9c','#e74c3c','#f39c12','#16a085'];
+  var newColor = colors[parent.children.length % colors.length];
   parent.children.splice(idx + 1, 0, {
     id: 'id-' + (idCounter++),
-    text: '兄弟节点',
+    text: '同级分支',
     collapsed: false,
-    color: '#4a6cf7',
+    color: newColor,
     children: []
   });
   drawRadial();
 }
 
+// ---- 编辑当前选中的节点 ----
 function editNode() {
+  if (selectedId === 'root') {
+    var root = findNode(treeData, 'root');
+    if (root) {
+      var newText = prompt('修改中心主题:', root.text);
+      if (newText !== null && newText.trim() !== '') {
+        root.text = newText.trim();
+        drawRadial();
+      }
+    }
+    return;
+  }
   var node = findNode(treeData, selectedId);
   if (!node) { alert('请先选中一个节点'); return; }
   var newText = prompt('修改文字:', node.text);
@@ -417,9 +505,10 @@ function editNode() {
   }
 }
 
+// ---- 删除节点 ----
 function deleteNode() {
   if (selectedId === 'root') { alert('根节点不能删除'); return; }
-  if (!confirm('确定删除该节点及其所有子节点吗？')) return;
+  if (!confirm('删除该节点及其所有子节点？')) return;
   var parent = findParent(treeData, selectedId);
   if (!parent) return;
   parent.children = parent.children.filter(function(c) { return c.id !== selectedId; });
@@ -427,6 +516,7 @@ function deleteNode() {
   drawRadial();
 }
 
+// ---- 展开/收起全部 ----
 function toggleAll(expand) {
   function walk(node) {
     node.collapsed = !expand;
@@ -440,9 +530,7 @@ function toggleAll(expand) {
   drawRadial();
 }
 
-// ============================================================
-// 导入
-// ============================================================
+// ---- 导入 ----
 function showImportModal() {
   document.getElementById('importModal').classList.add('active');
 }
@@ -453,8 +541,9 @@ function importFromText() {
   var text = document.getElementById('importText').value;
   if (!text.trim()) { alert('请输入内容'); return; }
   var lines = text.split('\n').filter(function(l) { return l.trim(); });
-  var root = { id: 'root', text: '📖 书摘', collapsed: false, color: '#1a1a2e', children: [] };
+  var root = { id: 'root', text: '📖 书摘', collapsed: false, color: '#2c3e50', children: [] };
   var stack = [{ node: root, level: 0 }];
+  var colors = ['#3498db','#e67e22','#2ecc71','#9b59b6','#1abc9c','#e74c3c','#f39c12','#16a085'];
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
     var indent = line.match(/^[\s\t]*/)[0].length;
@@ -464,7 +553,7 @@ function importFromText() {
       id: 'id-' + (idCounter++),
       text: content,
       collapsed: false,
-      color: '#4a6cf7',
+      color: colors[ (level) % colors.length ],
       children: []
     };
     while (stack.length > 1 && stack[stack.length - 1].level >= level) {
@@ -482,7 +571,7 @@ function importFromText() {
 }
 
 function exportImage() {
-  alert('📸 请使用手机截图功能保存（电源键+音量减）');
+  alert('📸 请使用手机截图功能保存（电源键+音量减）\n或浏览器分享中的"截图"选项。');
 }
 
 // ============================================================
