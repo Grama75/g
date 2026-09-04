@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>XMind 均匀放射</title>
+<title>XMind 放射 · 触控分离</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f5f7fa;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#1f2937}
@@ -129,7 +129,7 @@ let selectedId = 'root';
 let idCounter = 100;
 
 // ============================================================
-// 视图控制 + 高DPI支持
+// 视图控制 + 高DPI
 // ============================================================
 const view = { scale: 1, panX: 0, panY: 0 };
 const wrapper = document.getElementById('canvas-wrapper');
@@ -201,7 +201,7 @@ wrapper.addEventListener('touchmove', function(e) {
 wrapper.addEventListener('touchend', function() { touchPan = null; }, { passive: true });
 
 // ============================================================
-// 核心绘制：XMind风格 + 均匀角度
+// 核心绘制：XMind风格 + 均匀角度 + 触控小圆点
 // ============================================================
 function drawRadial() {
   const W = canvas._logicalWidth || wrapper.clientWidth;
@@ -234,35 +234,26 @@ function drawRadial() {
   const cx = W / 2, cy = H / 2;
   const baseRadius = Math.min(W, H) * 0.20;
 
-  // 2. 均匀分配角度（核心算法）
+  // 2. 均匀分配角度
   function assignAngles(list, parentId, depth) {
-    // 获取直接子节点
     const children = list.filter(n => n.parentId === parentId);
     if (children.length === 0) return;
-
-    // 确定该父节点的角度范围：如果父节点是根，范围是 -PI ~ PI；否则根据父节点的角度和半径计算
     const parent = list.find(n => n.id === parentId);
     let startAngle, endAngle;
     if (parentId === 'root') {
       startAngle = -Math.PI;
       endAngle = Math.PI;
     } else {
-      // 父节点所在角度，以及它的“扇区”宽度（与父节点的半径和子节点数量相关）
-      // 这里我们设定扇区宽度为父节点所在半径的弧长，但我们简化为固定角度范围
-      // 更好的方法：根据父节点的半径和子节点数量动态计算
       const halfRange = Math.min(0.6, Math.PI / (children.length + 1));
       startAngle = parent.angle - halfRange;
       endAngle = parent.angle + halfRange;
     }
-
     const range = endAngle - startAngle;
     const step = range / children.length;
     children.forEach((child, i) => {
       child.angle = startAngle + step * (i + 0.5);
-      // 半径随深度增加
       const r = baseRadius * (depth + 0.8) * 0.85;
       child.radius = Math.min(r, Math.max(W, H) * 0.35);
-      // 递归分配子节点
       assignAngles(list, child.id, depth + 1);
     });
   }
@@ -285,7 +276,7 @@ function drawRadial() {
     }
   });
 
-  // 4. 绘制连线（平滑曲线）
+  // 4. 绘制连线
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   nodes.forEach(n => {
@@ -306,7 +297,7 @@ function drawRadial() {
     }
   });
 
-  // 5. 绘制节点（XMind风格）
+  // 5. 绘制节点 + 触控小圆点（分离）
   nodes.forEach(n => {
     const x = n.x, y = n.y;
     if (x === undefined || y === undefined) return;
@@ -316,13 +307,11 @@ function drawRadial() {
     const radius = isRoot ? 22 : 18;
     const color = n.color || (isRoot ? '#1f2937' : '#3b82f6');
 
-    // 阴影
+    // ---- 节点方框（仅显示，不响应点击） ----
     ctx.shadowColor = 'rgba(0,0,0,0.06)';
     ctx.shadowBlur = 16;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 4;
-
-    // 圆角矩形
     ctx.beginPath();
     ctx.moveTo(x - w/2 + radius, y - h/2);
     ctx.lineTo(x + w/2 - radius, y - h/2);
@@ -334,8 +323,6 @@ function drawRadial() {
     ctx.lineTo(x - w/2, y - h/2 + radius);
     ctx.quadraticCurveTo(x - w/2, y - h/2, x - w/2 + radius, y - h/2);
     ctx.closePath();
-
-    // 渐变填充
     const grad = ctx.createLinearGradient(x - w/2, y - h/2, x + w/2, y + h/2);
     grad.addColorStop(0, color);
     grad.addColorStop(1, darkenColor(color, 0.1));
@@ -346,7 +333,7 @@ function drawRadial() {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // 选中边框
+    // ---- 选中边框（仅视觉效果，不响应点击） ----
     if (n.id === selectedId) {
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 3.5;
@@ -367,7 +354,7 @@ function drawRadial() {
       ctx.shadowColor = 'transparent';
     }
 
-    // 文字（清晰）
+    // ---- 文字 ----
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -387,6 +374,25 @@ function drawRadial() {
     }
     ctx.fillText(displayText, x, y + 1);
     ctx.shadowColor = 'transparent';
+
+    // ---- 触控小圆点（独立于方框之外，响应点击） ----
+    if (!isRoot) {
+      const dotX = x - w/2 - 12; // 节点左侧外12px
+      const dotY = y;
+      const dotR = 7;
+      // 绘制圆点
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, dotR, 0, 2 * Math.PI);
+      ctx.fillStyle = selectedId === n.id ? '#f59e0b' : 'rgba(255,255,255,0.6)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // 存储圆点坐标用于点击检测
+      n._dotX = dotX;
+      n._dotY = dotY;
+      n._dotR = dotR + 6; // 增大点击热区
+    }
   });
 
   document.getElementById('node-count').textContent = nodes.length + ' 节点';
@@ -405,7 +411,7 @@ function darkenColor(hex, amount) {
 }
 
 // ============================================================
-// 交互事件（点击、双击）
+// 交互事件：只有点击小圆点才能选中节点
 // ============================================================
 canvas.addEventListener('click', function(e) {
   const rect = canvas.getBoundingClientRect();
@@ -419,10 +425,13 @@ canvas.addEventListener('click', function(e) {
   my = (my - view.panY * scaleY) / view.scale;
 
   const nodes = canvas._clickNodes || [];
-  for (let n of nodes) {
-    if (n.x === undefined) continue;
-    const dx = mx - n.x, dy = my - n.y;
-    if (Math.sqrt(dx*dx + dy*dy) < (n.id === 'root' ? 30 : 24)) {
+  // 从后往前遍历（上层节点优先）
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    if (n.id === 'root') continue;
+    if (n._dotX === undefined) continue;
+    const dx = mx - n._dotX, dy = my - n._dotY;
+    if (dx*dx + dy*dy < n._dotR * n._dotR) {
       selectedId = n.id;
       drawRadial();
       return;
@@ -430,6 +439,7 @@ canvas.addEventListener('click', function(e) {
   }
 });
 
+// 双击编辑（同样只针对圆点附近，或双击空白区域取消选中，但保留双击节点文字编辑）
 canvas.addEventListener('dblclick', function(e) {
   const rect = canvas.getBoundingClientRect();
   const W = canvas._logicalWidth || rect.width;
@@ -440,11 +450,14 @@ canvas.addEventListener('dblclick', function(e) {
   let my = (e.clientY - rect.top) * scaleY;
   mx = (mx - view.panX * scaleX) / view.scale;
   my = (my - view.panY * scaleY) / view.scale;
+
   const nodes = canvas._clickNodes || [];
-  for (let n of nodes) {
-    if (n.x === undefined) continue;
-    const dx = mx - n.x, dy = my - n.y;
-    if (Math.sqrt(dx*dx + dy*dy) < 30) {
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    if (n.id === 'root') continue;
+    if (n._dotX === undefined) continue;
+    const dx = mx - n._dotX, dy = my - n._dotY;
+    if (dx*dx + dy*dy < n._dotR * n._dotR) {
       const node = findNode(treeData, n.id);
       if (node) {
         const newText = prompt('修改文字:', node.text);
@@ -493,7 +506,7 @@ function countNodes(node) {
 
 function addChild() {
   const parent = findNode(treeData, selectedId);
-  if (!parent) { alert('请先点击选中一个节点'); return; }
+  if (!parent) { alert('请先点击一个小圆点选中节点'); return; }
   if (!parent.children) parent.children = [];
   const colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
   const newColor = colors[parent.children.length % colors.length];
@@ -527,7 +540,7 @@ function addSibling() {
 
 function editNode() {
   const node = findNode(treeData, selectedId);
-  if (!node) { alert('请先选中一个节点'); return; }
+  if (!node) { alert('请先点击小圆点选中节点'); return; }
   const newText = prompt('修改文字:', node.text);
   if (newText !== null && newText.trim() !== '') {
     node.text = newText.trim();
