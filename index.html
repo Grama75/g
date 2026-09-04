@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>XMind 放射 · 触控分离</title>
+<title>XMind 放射 · 触控优化</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f5f7fa;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#1f2937}
@@ -125,7 +125,7 @@ let treeData = {
     }
   ]
 };
-let selectedId = 'root';
+let selectedId = null; // 初始无选中
 let idCounter = 100;
 
 // ============================================================
@@ -201,7 +201,7 @@ wrapper.addEventListener('touchmove', function(e) {
 wrapper.addEventListener('touchend', function() { touchPan = null; }, { passive: true });
 
 // ============================================================
-// 核心绘制：XMind风格 + 均匀角度 + 触控小圆点
+// 核心绘制：XMind风格 + 均匀角度 + 触控小圆点（深色，外发光）
 // ============================================================
 function drawRadial() {
   const W = canvas._logicalWidth || wrapper.clientWidth;
@@ -297,7 +297,7 @@ function drawRadial() {
     }
   });
 
-  // 5. 绘制节点 + 触控小圆点（分离）
+  // 5. 绘制节点 + 触控小圆点
   nodes.forEach(n => {
     const x = n.x, y = n.y;
     if (x === undefined || y === undefined) return;
@@ -307,7 +307,7 @@ function drawRadial() {
     const radius = isRoot ? 22 : 18;
     const color = n.color || (isRoot ? '#1f2937' : '#3b82f6');
 
-    // ---- 节点方框（仅显示，不响应点击） ----
+    // ---- 节点方框 ----
     ctx.shadowColor = 'rgba(0,0,0,0.06)';
     ctx.shadowBlur = 16;
     ctx.shadowOffsetX = 0;
@@ -333,8 +333,8 @@ function drawRadial() {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // ---- 选中边框（仅视觉效果，不响应点击） ----
-    if (n.id === selectedId) {
+    // ---- 选中边框 ----
+    if (selectedId === n.id) {
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 3.5;
       ctx.shadowColor = 'rgba(245,158,11,0.3)';
@@ -375,23 +375,27 @@ function drawRadial() {
     ctx.fillText(displayText, x, y + 1);
     ctx.shadowColor = 'transparent';
 
-    // ---- 触控小圆点（独立于方框之外，响应点击） ----
+    // ---- 触控小圆点（独立于方框之外，深色带外发光） ----
     if (!isRoot) {
-      const dotX = x - w/2 - 12; // 节点左侧外12px
+      const dotX = x - w/2 - 12;
       const dotY = y;
       const dotR = 7;
-      // 绘制圆点
+      // 外发光（白色半透明，增强辨识度）
+      ctx.shadowColor = 'rgba(255,255,255,0.8)';
+      ctx.shadowBlur = 10;
       ctx.beginPath();
       ctx.arc(dotX, dotY, dotR, 0, 2 * Math.PI);
-      ctx.fillStyle = selectedId === n.id ? '#f59e0b' : 'rgba(255,255,255,0.6)';
+      ctx.fillStyle = selectedId === n.id ? '#f59e0b' : '#6b7280';
       ctx.fill();
+      ctx.shadowColor = 'transparent';
+      // 边框
       ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
-      // 存储圆点坐标用于点击检测
+      // 存储点击区域（扩大热区）
       n._dotX = dotX;
       n._dotY = dotY;
-      n._dotR = dotR + 6; // 增大点击热区
+      n._dotR = dotR + 8; // 热区半径
     }
   });
 
@@ -411,7 +415,7 @@ function darkenColor(hex, amount) {
 }
 
 // ============================================================
-// 交互事件：只有点击小圆点才能选中节点
+// 交互事件：点击小圆点选中/取消选中，点击空白取消选中
 // ============================================================
 canvas.addEventListener('click', function(e) {
   const rect = canvas.getBoundingClientRect();
@@ -425,6 +429,7 @@ canvas.addEventListener('click', function(e) {
   my = (my - view.panY * scaleY) / view.scale;
 
   const nodes = canvas._clickNodes || [];
+  let hit = false;
   // 从后往前遍历（上层节点优先）
   for (let i = nodes.length - 1; i >= 0; i--) {
     const n = nodes[i];
@@ -432,14 +437,25 @@ canvas.addEventListener('click', function(e) {
     if (n._dotX === undefined) continue;
     const dx = mx - n._dotX, dy = my - n._dotY;
     if (dx*dx + dy*dy < n._dotR * n._dotR) {
-      selectedId = n.id;
+      // 切换选中状态
+      if (selectedId === n.id) {
+        selectedId = null; // 取消选中
+      } else {
+        selectedId = n.id;
+      }
       drawRadial();
-      return;
+      hit = true;
+      break;
     }
+  }
+  // 如果点击空白区域（非小圆点），取消选中
+  if (!hit) {
+    selectedId = null;
+    drawRadial();
   }
 });
 
-// 双击编辑（同样只针对圆点附近，或双击空白区域取消选中，但保留双击节点文字编辑）
+// 双击编辑（点击小圆点）
 canvas.addEventListener('dblclick', function(e) {
   const rect = canvas.getBoundingClientRect();
   const W = canvas._logicalWidth || rect.width;
@@ -505,8 +521,9 @@ function countNodes(node) {
 }
 
 function addChild() {
+  if (!selectedId) { alert('请先点击一个小圆点选中节点'); return; }
   const parent = findNode(treeData, selectedId);
-  if (!parent) { alert('请先点击一个小圆点选中节点'); return; }
+  if (!parent) { alert('选中节点不存在'); return; }
   if (!parent.children) parent.children = [];
   const colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
   const newColor = colors[parent.children.length % colors.length];
@@ -521,7 +538,7 @@ function addChild() {
 }
 
 function addSibling() {
-  if (selectedId === 'root') { alert('根节点不能添加兄弟'); return; }
+  if (!selectedId || selectedId === 'root') { alert('请先选中一个非根节点'); return; }
   const parent = findParent(treeData, selectedId);
   if (!parent) return;
   let idx = parent.children.findIndex(c => c.id === selectedId);
@@ -539,8 +556,9 @@ function addSibling() {
 }
 
 function editNode() {
+  if (!selectedId) { alert('请先点击小圆点选中节点'); return; }
   const node = findNode(treeData, selectedId);
-  if (!node) { alert('请先点击小圆点选中节点'); return; }
+  if (!node) return;
   const newText = prompt('修改文字:', node.text);
   if (newText !== null && newText.trim() !== '') {
     node.text = newText.trim();
@@ -549,12 +567,12 @@ function editNode() {
 }
 
 function deleteNode() {
-  if (selectedId === 'root') { alert('根节点不能删除'); return; }
+  if (!selectedId || selectedId === 'root') { alert('请先选中一个非根节点'); return; }
   if (!confirm('删除该节点及其所有子节点？')) return;
   const parent = findParent(treeData, selectedId);
   if (!parent) return;
   parent.children = parent.children.filter(c => c.id !== selectedId);
-  selectedId = parent.id;
+  selectedId = null;
   drawRadial();
 }
 
@@ -599,7 +617,7 @@ function importFromText() {
     stack.push({ node: newNode, level: level });
   }
   treeData = root;
-  selectedId = 'root';
+  selectedId = null;
   closeImportModal();
   drawRadial();
 }
