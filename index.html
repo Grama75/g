@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>XMind 放射 · 触控优化</title>
+<title>XMind 放射 · 热区增大</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f5f7fa;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#1f2937}
@@ -201,7 +201,7 @@ wrapper.addEventListener('touchmove', function(e) {
 wrapper.addEventListener('touchend', function() { touchPan = null; }, { passive: true });
 
 // ============================================================
-// 核心绘制：XMind风格 + 均匀角度 + 触控小圆点（深色，外发光）
+// 核心绘制：XMind风格 + 均匀角度 + 触控小圆点（热区增大）
 // ============================================================
 function drawRadial() {
   const W = canvas._logicalWidth || wrapper.clientWidth;
@@ -392,10 +392,10 @@ function drawRadial() {
       ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
-      // 存储点击区域（扩大热区）
+      // ----- 关键修改：热区半径从 dotR+8 增大到 dotR+28 -----
       n._dotX = dotX;
       n._dotY = dotY;
-      n._dotR = dotR + 8; // 热区半径
+      n._dotR = dotR + 28; // 原为 +8，现改为 +28，热区半径达35px
     }
   });
 
