@@ -121,6 +121,7 @@
             pointer-events: auto;
             cursor: grab;
             -webkit-tap-highlight-color: transparent;
+            background: #ffffff; /* 后备背景，确保可见 */
         }
         .node-box:active {
             cursor: grabbing;
@@ -154,7 +155,7 @@
             width: calc(var(--dot-r) * 2);
             height: calc(var(--dot-r) * 2);
             border-radius: 50%;
-            background: var(--dot-color);
+            background-color: var(--dot-color);
             border: 2px solid #fff;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
             pointer-events: auto;
@@ -163,7 +164,6 @@
             transition: background 0.15s ease, transform 0.15s ease;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
-            /* 扩大热区至半径13px，保持视觉大小不变 */
             padding: 6px;
             background-clip: content-box;
             background-color: var(--dot-color);
@@ -653,15 +653,23 @@
 
             function renderNodes() {
                 const visibleNodes = getVisibleNodes();
+                // 清空节点层
                 nodesLayer.innerHTML = '';
+                if (visibleNodes.length === 0) {
+                    console.warn('没有可见节点');
+                    return;
+                }
+                const containerRect = container.getBoundingClientRect();
                 visibleNodes.forEach(node => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'node-wrapper';
                     wrapper.dataset.nodeId = node.id;
                     const screenPos = canvasToScreen(node.x, node.y);
-                    const containerRect = container.getBoundingClientRect();
-                    wrapper.style.left = (screenPos.x - containerRect.left) + 'px';
-                    wrapper.style.top = (screenPos.y - containerRect.top) + 'px';
+                    // 相对于容器的坐标
+                    const left = screenPos.x - containerRect.left;
+                    const top = screenPos.y - containerRect.top;
+                    wrapper.style.left = left + 'px';
+                    wrapper.style.top = top + 'px';
 
                     const box = document.createElement('div');
                     box.className = 'node-box';
@@ -747,7 +755,6 @@
             let pointerMoved = false;
 
             container.addEventListener('pointerdown', (e) => {
-                // 小圆点点击：选中节点，阻止拖动
                 const dotTarget = e.target.closest('.node-dot');
                 if (dotTarget) {
                     e.preventDefault();
@@ -759,7 +766,6 @@
                     return;
                 }
 
-                // 节点框或空白：启动可能的拖动
                 isPointerDown = true;
                 activePointerId = e.pointerId;
                 pointerStartClientX = e.clientX;
@@ -800,7 +806,6 @@
                     container.releasePointerCapture(e.pointerId);
                 }
                 if (!wasDragging && draggedDistance <= DRAG_THRESHOLD) {
-                    // 判断点击目标：如果是节点框，不取消选中；如果是空白，取消选中
                     const target = e.target;
                     if (!target.closest('.node-box') && !target.closest('.node-dot')) {
                         selectNode(null);
@@ -821,7 +826,7 @@
                 }
             });
 
-            // 缩放：滚轮
+            // 缩放
             container.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const delta = e.deltaY > 0 ? -0.08 : 0.08;
@@ -858,7 +863,3 @@
                     render();
                 }
             }, { passive: false });
-
-            container.addEventListener('touchend', (e) => {
-                if (e.touches.length < 2) pinchStartDist = 0;
-            }, { passive: true
