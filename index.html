@@ -26,7 +26,6 @@
             --danger: #e74c3c;
             --modal-bg: rgba(0, 0, 0, 0.4);
             --line-color: #c5ced8;
-            --line-width: 1.6;
             --root-bg: linear-gradient(135deg, #5b8ff9 0%, #3b6fe0 100%);
             --root-text: #ffffff;
             --level1-bg: linear-gradient(135deg, #ffffff 0%, #f0f4fa 100%);
@@ -34,7 +33,6 @@
             --level3-bg: #ffffff;
             --node-radius: 10px;
             --dot-r: 7px;
-            --dot-hot-r: 13px;
             --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
         }
 
@@ -71,11 +69,9 @@
             overflow: hidden;
             cursor: grab;
             touch-action: none;
+            background: var(--bg);
         }
         #canvas-container:active {
-            cursor: grabbing;
-        }
-        #canvas-container.dragging {
             cursor: grabbing;
         }
 
@@ -92,13 +88,13 @@
             top: 0;
             left: 0;
             z-index: 2;
-            pointer-events: none;
+            pointer-events: auto;
         }
 
         .node-wrapper {
             position: absolute;
             pointer-events: none;
-            transition: none;
+            transform: translate(-50%, -50%);
         }
 
         .node-box {
@@ -166,16 +162,21 @@
             z-index: 3;
             transition: background 0.15s ease, transform 0.15s ease;
             -webkit-tap-highlight-color: transparent;
-            touch-action: none;
+            touch-action: manipulation;
+            /* 扩大热区至半径13px，保持视觉大小不变 */
+            padding: 6px;
+            background-clip: content-box;
+            background-color: var(--dot-color);
+            border: 2px solid #fff;
         }
         .node-dot.active {
-            background: var(--dot-active);
-            transform: scale(1.2);
+            background-color: var(--dot-active);
+            transform: scale(1.1);
             box-shadow: 0 0 0 4px rgba(91, 143, 249, 0.25), 0 2px 8px rgba(0, 0, 0, 0.2);
         }
         .node-dot:hover {
-            background: var(--dot-active);
-            transform: scale(1.15);
+            background-color: var(--dot-active);
+            transform: scale(1.1);
         }
 
         #toolbar {
@@ -407,7 +408,6 @@
             }
             .node-dot {
                 --dot-r: 6px;
-                --dot-hot-r: 12px;
             }
         }
     </style>
@@ -495,7 +495,6 @@
             node1.children = [node11, node12];
             node2.children = [node21];
 
-            // 节点映射表
             let nodeMap = new Map();
 
             function buildNodeMap() {
@@ -510,19 +509,7 @@
             buildNodeMap();
 
             function getNode(id) { return nodeMap.get(id) || null; }
-
             function getRoot() { return rootNode; }
-
-            function getAllNodes() {
-                const result = [];
-                (function traverse(node) {
-                    result.push(node);
-                    if (!node.collapsed) {
-                        node.children.forEach(ch => traverse(ch));
-                    }
-                })(rootNode);
-                return result;
-            }
 
             function getVisibleNodes() {
                 const result = [];
@@ -533,16 +520,6 @@
                     }
                 })(rootNode);
                 return result;
-            }
-
-            function getNodePath(nodeId) {
-                const path = [];
-                let current = getNode(nodeId);
-                while (current) {
-                    path.unshift(current);
-                    current = current.parentId ? getNode(current.parentId) : null;
-                }
-                return path;
             }
 
             // ==================== 布局算法 ====================
@@ -563,7 +540,6 @@
             }
 
             function calculateLayout() {
-                // 递归计算扇区
                 function assignSectors(node, sectorStart, sectorEnd) {
                     node.sectorStart = sectorStart;
                     node.sectorEnd = sectorEnd;
@@ -579,10 +555,8 @@
                         assignSectors(child, childStart, childEnd);
                     });
                 }
-                // 根节点：360°完整扇区
                 assignSectors(rootNode, 0, 360);
-                // 计算坐标
-                (function computePositions(node, parentX, parentY, parentAngle) {
+                (function computePositions(node, parentX, parentY) {
                     if (node.depth === 0) {
                         node.x = 0;
                         node.y = 0;
@@ -594,9 +568,9 @@
                         node.y = parentY + Math.sin(rad) * dist;
                     }
                     if (!node.collapsed) {
-                        node.children.forEach(ch => computePositions(ch, node.x, node.y, node.angle));
+                        node.children.forEach(ch => computePositions(ch, node.x, node.y));
                     }
-                })(rootNode, 0, 0, 0);
+                })(rootNode, 0, 0);
             }
 
             // ==================== 渲染 ====================
@@ -608,26 +582,19 @@
 
             let view = { scale: 1, panX: 0, panY: 0 };
             let isDragging = false;
-            let dragStartX = 0,
-                dragStartY = 0;
-            let dragPanStartX = 0,
-                dragPanStartY = 0;
+            let dragStartX = 0, dragStartY = 0;
+            let dragPanStartX = 0, dragPanStartY = 0;
             let draggedDistance = 0;
             const DRAG_THRESHOLD = 5;
 
             function screenToCanvas(sx, sy) {
                 const rect = container.getBoundingClientRect();
-                const x = (sx - rect.left - view.panX) / view.scale;
-                const y = (sy - rect.top - view.panY) / view.scale;
-                return { x, y };
+                return { x: (sx - rect.left - view.panX) / view.scale, y: (sy - rect.top - view.panY) / view.scale };
             }
 
             function canvasToScreen(cx, cy) {
                 const rect = container.getBoundingClientRect();
-                return {
-                    x: rect.left + cx * view.scale + view.panX,
-                    y: rect.top + cy * view.scale + view.panY,
-                };
+                return { x: rect.left + cx * view.scale + view.panX, y: rect.top + cy * view.scale + view.panY };
             }
 
             function render() {
@@ -644,25 +611,21 @@
                 svgLayer.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
                 let svgContent = '';
                 const visibleNodes = getVisibleNodes();
-
                 visibleNodes.forEach(node => {
                     if (node.depth === 0 || !node.parentId) return;
                     const parent = getNode(node.parentId);
                     if (!parent) return;
                     const from = canvasToScreen(parent.x, parent.y);
                     const to = canvasToScreen(node.x, node.y);
-                    // 计算连线起终点（从节点边缘）
                     const fromEdge = getEdgePoint(parent, node, from);
                     const toEdge = getEdgePoint(node, parent, to, true);
-                    // 贝塞尔曲线控制点
                     const mx = (fromEdge.x + toEdge.x) / 2;
                     const my = (fromEdge.y + toEdge.y) / 2;
                     const cp1x = fromEdge.x + (mx - fromEdge.x) * 0.5;
                     const cp1y = fromEdge.y + (my - fromEdge.y) * 0.5;
                     const cp2x = toEdge.x + (mx - toEdge.x) * 0.5;
                     const cp2y = toEdge.y + (my - toEdge.y) * 0.5;
-                    svgContent +=
-                        `<path d="M ${fromEdge.x} ${fromEdge.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${toEdge.x} ${toEdge.y}" stroke="${getLineColor(node.depth)}" stroke-width="${varLineWidth(node.depth)}" fill="none" stroke-linecap="round" opacity="0.7"/>`;
+                    svgContent += `<path d="M ${fromEdge.x} ${fromEdge.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${toEdge.x} ${toEdge.y}" stroke="${getLineColor(node.depth)}" stroke-width="${varLineWidth(node.depth)}" fill="none" stroke-linecap="round" opacity="0.7"/>`;
                 });
                 svgLayer.innerHTML = svgContent;
             }
@@ -678,19 +641,14 @@
             }
 
             function getEdgePoint(fromNode, toNode, screenPos, isTo = false) {
-                // 简化：使用节点中心点，偏移小量
-                const offset = 12;
-                const dx = screenPos.x - (isTo ? canvasToScreen(fromNode.x, fromNode.y).x : canvasToScreen(toNode.x, toNode.y)
-                    .x);
-                const dy = screenPos.y - (isTo ? canvasToScreen(fromNode.x, fromNode.y).y : canvasToScreen(toNode.x, toNode.y)
-                    .y);
+                const otherScreen = isTo ? canvasToScreen(fromNode.x, fromNode.y) : canvasToScreen(toNode.x, toNode.y);
+                const dx = screenPos.x - otherScreen.x;
+                const dy = screenPos.y - otherScreen.y;
                 const dist = Math.sqrt(dx * dx + dy * dy) || 1;
                 const nx = dx / dist;
                 const ny = dy / dist;
-                return {
-                    x: screenPos.x - nx * offset,
-                    y: screenPos.y - ny * offset,
-                };
+                const offset = 12;
+                return { x: screenPos.x - nx * offset, y: screenPos.y - ny * offset };
             }
 
             function renderNodes() {
@@ -701,11 +659,10 @@
                     wrapper.className = 'node-wrapper';
                     wrapper.dataset.nodeId = node.id;
                     const screenPos = canvasToScreen(node.x, node.y);
-                    wrapper.style.left = (screenPos.x - container.getBoundingClientRect().left) + 'px';
-                    wrapper.style.top = (screenPos.y - container.getBoundingClientRect().top) + 'px';
-                    wrapper.style.transform = 'translate(-50%, -50%)';
+                    const containerRect = container.getBoundingClientRect();
+                    wrapper.style.left = (screenPos.x - containerRect.left) + 'px';
+                    wrapper.style.top = (screenPos.y - containerRect.top) + 'px';
 
-                    // 节点框
                     const box = document.createElement('div');
                     box.className = 'node-box';
                     if (node.depth === 0) box.classList.add('root-node');
@@ -715,22 +672,13 @@
                     if (node.id === selectedId) box.classList.add('selected');
                     box.textContent = node.text;
                     box.dataset.nodeId = node.id;
-                    box.style.pointerEvents = 'auto';
-                    box.style.cursor = 'grab';
 
-                    // 小圆点
                     const dot = document.createElement('div');
                     dot.className = 'node-dot';
                     if (node.id === selectedId) dot.classList.add('active');
                     dot.dataset.nodeId = node.id;
-                    dot.style.pointerEvents = 'auto';
-                    dot.style.cursor = 'pointer';
-                    dot.style.touchAction = 'none';
 
-                    // 计算小圆点位置（在节点框外侧）
                     const dotSide = getDotSide(node);
-                    const dotR = 7;
-                    const hotR = 13;
                     const dotOffset = 16;
                     if (dotSide === 'right') {
                         dot.style.right = (-dotOffset) + 'px';
@@ -779,8 +727,7 @@
             }
 
             function updateHintVisibility() {
-                const visibleNodes = getVisibleNodes();
-                if (visibleNodes.length <= 1) {
+                if (getVisibleNodes().length <= 1) {
                     hintText.classList.remove('hidden');
                 } else {
                     hintText.classList.add('hidden');
@@ -791,89 +738,127 @@
                 zoomIndicator.textContent = Math.round(view.scale * 100) + '%';
             }
 
-            // ==================== 小圆点热区检测（核心） ====================
-            function getDotCenterOnScreen(node) {
-                const rect = container.getBoundingClientRect();
-                const nodeScreen = canvasToScreen(node.x, node.y);
-                const dotOffsetX = node.dotOffsetX || 0;
-                const dotOffsetY = node.dotOffsetY || 0;
-                const scale = view.scale;
-                // 小圆点偏移是在节点框坐标系中，需要转换为屏幕坐标
-                const dotScreenX = nodeScreen.x + dotOffsetX * scale;
-                const dotScreenY = nodeScreen.y + dotOffsetY * scale;
-                return { x: dotScreenX, y: dotScreenY };
-            }
-
-            function hitTestDot(clientX, clientY) {
-                const visibleNodes = getVisibleNodes();
-                const HOT_RADIUS = 13; // 热区半径13px（屏幕像素）
-                // 从最深层级开始检测（后渲染的在上层，但这里按深度倒序更合理）
-                const sortedNodes = [...visibleNodes].sort((a, b) => b.depth - a.depth);
-                for (const node of sortedNodes) {
-                    const dotCenter = getDotCenterOnScreen(node);
-                    const dx = clientX - dotCenter.x;
-                    const dy = clientY - dotCenter.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist <= HOT_RADIUS) {
-                        return node.id;
-                    }
-                }
-                return null;
-            }
-
-            function hitTestNodeBox(clientX, clientY) {
-                const visibleNodes = getVisibleNodes();
-                const sortedNodes = [...visibleNodes].sort((a, b) => b.depth - a.depth);
-                for (const node of sortedNodes) {
-                    const nodeScreen = canvasToScreen(node.x, node.y);
-                    // 粗略检测：在节点框范围内
-                    const boxW = 80 + Math.min(node.text.length * 12, 140);
-                    const boxH = 36;
-                    if (Math.abs(clientX - nodeScreen.x) < boxW / 2 * view.scale &&
-                        Math.abs(clientY - nodeScreen.y) < boxH / 2 * view.scale) {
-                        return node.id;
-                    }
-                }
-                return null;
-            }
-
             // ==================== 事件处理 ====================
             let activePointerId = null;
-            let pointerStartClientX = 0,
-                pointerStartClientY = 0;
-            let pointerStartPanX = 0,
-                pointerStartPanY = 0;
+            let pointerStartClientX = 0, pointerStartClientY = 0;
+            let pointerStartPanX = 0, pointerStartPanY = 0;
             let isPointerDown = false;
+            let isDragging = false;
             let pointerMoved = false;
-            let pointerOnDot = false;
-            let pointerOnNodeBox = false;
-            let pointerNodeId = null;
 
             container.addEventListener('pointerdown', (e) => {
-                if (e.target.closest('.node-dot')) {
-                    // 点击了小圆点：选中节点
-                    const nodeId = e.target.closest('.node-dot').dataset.nodeId;
+                // 小圆点点击：选中节点，阻止拖动
+                const dotTarget = e.target.closest('.node-dot');
+                if (dotTarget) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const nodeId = dotTarget.dataset.nodeId;
                     if (nodeId) {
                         selectNode(nodeId);
                     }
-                    e.preventDefault();
                     return;
                 }
-                // 点击节点框或空白：开始可能的拖动画布
+
+                // 节点框或空白：启动可能的拖动
                 isPointerDown = true;
                 activePointerId = e.pointerId;
                 pointerStartClientX = e.clientX;
                 pointerStartClientY = e.clientY;
                 pointerStartPanX = view.panX;
                 pointerStartPanY = view.panY;
+                isDragging = false;
                 pointerMoved = false;
                 draggedDistance = 0;
-                isDragging = false;
-                container.classList.add('dragging');
                 container.setPointerCapture(e.pointerId);
                 e.preventDefault();
             });
 
             container.addEventListener('pointermove', (e) => {
                 if (!isPointerDown || e.pointerId !== activePointerId) return;
-                
+                const dx = e.clientX - pointerStartClientX;
+                const dy = e.clientY - pointerStartClientY;
+                draggedDistance = Math.sqrt(dx * dx + dy * dy);
+                if (draggedDistance > DRAG_THRESHOLD) {
+                    isDragging = true;
+                    pointerMoved = true;
+                }
+                if (isDragging) {
+                    view.panX = pointerStartPanX + dx;
+                    view.panY = pointerStartPanY + dy;
+                    render();
+                }
+                e.preventDefault();
+            });
+
+            container.addEventListener('pointerup', (e) => {
+                if (e.pointerId !== activePointerId) return;
+                const wasDragging = isDragging;
+                isPointerDown = false;
+                isDragging = false;
+                activePointerId = null;
+                if (container.hasPointerCapture && container.hasPointerCapture(e.pointerId)) {
+                    container.releasePointerCapture(e.pointerId);
+                }
+                if (!wasDragging && draggedDistance <= DRAG_THRESHOLD) {
+                    // 判断点击目标：如果是节点框，不取消选中；如果是空白，取消选中
+                    const target = e.target;
+                    if (!target.closest('.node-box') && !target.closest('.node-dot')) {
+                        selectNode(null);
+                    }
+                }
+                pointerMoved = false;
+                draggedDistance = 0;
+                e.preventDefault();
+            });
+
+            container.addEventListener('pointercancel', (e) => {
+                if (e.pointerId === activePointerId) {
+                    isPointerDown = false;
+                    isDragging = false;
+                    activePointerId = null;
+                    pointerMoved = false;
+                    draggedDistance = 0;
+                }
+            });
+
+            // 缩放：滚轮
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.08 : 0.08;
+                applyZoom(delta, e.clientX, e.clientY);
+            }, { passive: false });
+
+            // 双指缩放
+            let pinchStartDist = 0;
+            let pinchStartScale = 1;
+            let pinchCenterX = 0, pinchCenterY = 0;
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    pinchStartDist = Math.sqrt(dx * dx + dy * dy);
+                    pinchStartScale = view.scale;
+                    pinchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                    pinchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                }
+            }, { passive: true });
+
+            container.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2 && pinchStartDist > 0) {
+                    e.preventDefault();
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const newScale = pinchStartScale * (dist / pinchStartDist);
+                    const clampedScale = Math.max(0.15, Math.min(3, newScale));
+                    const scaleRatio = clampedScale / view.scale;
+                    view.scale = clampedScale;
+                    view.panX = pinchCenterX - (pinchCenterX - view.panX) * scaleRatio;
+                    view.panY = pinchCenterY - (pinchCenterY - view.panY) * scaleRatio;
+                    render();
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) pinchStartDist = 0;
+            }, { passive: true
