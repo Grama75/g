@@ -1,627 +1,879 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>XMind 放射 · 坐标修正</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f5f7fa;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#1f2937}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>放射状思维导图 · XMind风格</title>
+    <style>
+        :root {
+            --bg: #f7f8fa;
+            --node-bg: #ffffff;
+            --node-border: #e0e3e8;
+            --node-shadow: 0 2px 10px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.05);
+            --node-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+            --text-primary: #2c3e50;
+            --text-secondary: #5a6b7d;
+            --accent: #5b8ff9;
+            --accent-light: #e8f0fe;
+            --dot-color: #b8c4d0;
+            --dot-active: #5b8ff9;
+            --toolbar-bg: rgba(255, 255, 255, 0.92);
+            --toolbar-border: #e0e3e8;
+            --btn-bg: #ffffff;
+            --btn-border: #d0d5dd;
+            --btn-text: #3a4a5a;
+            --btn-active: #5b8ff9;
+            --danger: #e74c3c;
+            --modal-bg: rgba(0, 0, 0, 0.4);
+            --line-color: #c5ced8;
+            --line-width: 1.6;
+            --root-bg: linear-gradient(135deg, #5b8ff9 0%, #3b6fe0 100%);
+            --root-text: #ffffff;
+            --level1-bg: linear-gradient(135deg, #ffffff 0%, #f0f4fa 100%);
+            --level2-bg: linear-gradient(135deg, #ffffff 0%, #f7f9fc 100%);
+            --level3-bg: #ffffff;
+            --node-radius: 10px;
+            --dot-r: 7px;
+            --dot-hot-r: 13px;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+        }
 
-#header{background:#ffffff;padding:8px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e8eaed;flex-shrink:0;height:44px}
-#header h1{font-size:17px;font-weight:600;color:#1f2937;letter-spacing:-0.3px}
-#header .badge{font-size:13px;color:#9ca3af;font-weight:400}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            user-select: none;
+        }
 
-#canvas-wrapper{flex:1;overflow:hidden;position:relative;background:#fafbfc;touch-action:none;cursor:grab}
-#canvas-wrapper:active{cursor:grabbing}
-#radial-canvas{width:100%;height:100%;display:block;transform-origin:0 0;touch-action:none}
+        body {
+            font-family: var(--font-family);
+            background: var(--bg);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            touch-action: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
 
-#bottom-toolbar{background:#ffffff;border-top:1px solid #e8eaed;display:flex;flex-wrap:wrap;justify-content:space-around;padding:6px 0 env(safe-area-inset-bottom);flex-shrink:0}
-#bottom-toolbar .group{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-#bottom-toolbar button{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;font-size:10px;color:#6b7280;padding:4px 12px;min-height:40px;min-width:44px;touch-action:manipulation;border-radius:10px;transition:background 0.15s}
-#bottom-toolbar button .icon{font-size:18px;line-height:1.2}
-#bottom-toolbar button .label{margin-top:2px;font-size:9px;font-weight:500}
-#bottom-toolbar button:active{background:#f3f4f6;color:#2563eb}
-#bottom-toolbar .del:active{color:#dc2626}
-#bottom-toolbar .zoom-btn{background:#f3f4f6;border-radius:24px;padding:2px 14px;flex-direction:row;gap:4px;min-height:32px}
-#bottom-toolbar .zoom-btn:active{background:#e5e7eb}
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            cursor: grab;
+            touch-action: none;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+        #canvas-container.dragging {
+            cursor: grabbing;
+        }
 
-.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:999;backdrop-filter:blur(4px)}
-.modal.active{display:flex}
-.modal-box{background:#ffffff;border-radius:20px;padding:24px;width:92%;max-width:400px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
-.modal-box h3{font-size:18px;font-weight:600;margin-bottom:6px;color:#1f2937}
-.modal-box p{font-size:14px;color:#6b7280;margin:6px 0 14px;line-height:1.5}
-.modal-box textarea{width:100%;height:150px;padding:12px;border:1px solid #d1d5db;border-radius:12px;font-size:14px;resize:vertical;font-family:inherit;background:#f9fafb;transition:border 0.2s}
-.modal-box textarea:focus{border-color:#2563eb;outline:none;background:#ffffff}
-.modal-box .btn-row{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
-.modal-box .btn-row button{padding:10px 24px;border-radius:30px;border:none;font-size:14px;font-weight:500;min-height:40px;cursor:pointer}
-.modal-box .btn-row .primary{background:#2563eb;color:#fff}
-.modal-box .btn-row .primary:active{background:#1d4ed8}
-.modal-box .btn-row .secondary{background:#f3f4f6;color:#4b5563}
-.modal-box .btn-row .secondary:active{background:#e5e7eb}
-</style>
+        #svg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #nodes-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .node-wrapper {
+            position: absolute;
+            pointer-events: none;
+            transition: none;
+        }
+
+        .node-box {
+            position: relative;
+            pointer-events: auto;
+            cursor: grab;
+            border-radius: var(--node-radius);
+            box-shadow: var(--node-shadow);
+            border: 1.5px solid var(--node-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 8px 16px;
+            min-width: 56px;
+            min-height: 36px;
+            max-width: 220px;
+            word-break: break-word;
+            white-space: normal;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: box-shadow 0.18s ease;
+            pointer-events: auto;
+            cursor: grab;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .node-box:active {
+            cursor: grabbing;
+        }
+        .node-box.selected {
+            box-shadow: var(--node-shadow-hover), 0 0 0 3px var(--accent-light);
+            border-color: var(--accent);
+        }
+
+        .node-box.root-node {
+            background: var(--root-bg);
+            color: var(--root-text);
+            font-weight: 700;
+            font-size: 16px;
+            border-color: #2f5fc9;
+            box-shadow: 0 4px 20px rgba(59, 111, 224, 0.35), 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .node-box.level-1 {
+            background: var(--level1-bg);
+            font-weight: 600;
+        }
+        .node-box.level-2 {
+            background: var(--level2-bg);
+        }
+        .node-box.level-3 {
+            background: var(--level3-bg);
+        }
+
+        .node-dot {
+            position: absolute;
+            width: calc(var(--dot-r) * 2);
+            height: calc(var(--dot-r) * 2);
+            border-radius: 50%;
+            background: var(--dot-color);
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+            pointer-events: auto;
+            cursor: pointer;
+            z-index: 3;
+            transition: background 0.15s ease, transform 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+        }
+        .node-dot.active {
+            background: var(--dot-active);
+            transform: scale(1.2);
+            box-shadow: 0 0 0 4px rgba(91, 143, 249, 0.25), 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .node-dot:hover {
+            background: var(--dot-active);
+            transform: scale(1.15);
+        }
+
+        #toolbar {
+            position: fixed;
+            bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            gap: 8px;
+            background: var(--toolbar-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--toolbar-border);
+            border-radius: 18px;
+            padding: 8px 12px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            max-width: 96vw;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        #toolbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .toolbar-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            min-width: 44px;
+            height: 44px;
+            padding: 0 14px;
+            border-radius: 12px;
+            border: 1px solid var(--btn-border);
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+            font-family: var(--font-family);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            flex-shrink: 0;
+        }
+        .toolbar-btn:active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            transform: scale(0.95);
+        }
+        .toolbar-btn.primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .toolbar-btn.primary:active {
+            background: #3b6fe0;
+            border-color: #3b6fe0;
+        }
+        .toolbar-btn.danger {
+            color: var(--danger);
+            border-color: #f0c4c4;
+        }
+        .toolbar-btn.danger:active {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+        }
+        .toolbar-btn .icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--modal-bg);
+            z-index: 20;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        #modal-overlay.show {
+            display: flex;
+        }
+
+        #modal-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 560px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        #modal-box h3 {
+            font-size: 17px;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        #modal-box textarea {
+            flex: 1;
+            min-height: 180px;
+            border: 1.5px solid var(--node-border);
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px;
+            font-family: var(--font-family);
+            resize: vertical;
+            outline: none;
+            color: var(--text-primary);
+            background: #fafbfc;
+            user-select: text;
+            -webkit-user-select: text;
+            touch-action: auto;
+            line-height: 1.5;
+        }
+        #modal-box textarea:focus {
+            border-color: var(--accent);
+            background: #fff;
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
+        #modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid var(--btn-border);
+            background: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-family);
+            transition: all 0.15s ease;
+            min-height: 42px;
+        }
+        .modal-btn.primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .modal-btn.primary:active {
+            background: #3b6fe0;
+        }
+        .modal-btn:active {
+            transform: scale(0.96);
+        }
+
+        #zoom-indicator {
+            position: fixed;
+            top: calc(12px + env(safe-area-inset-top, 0px));
+            right: 16px;
+            z-index: 9;
+            background: var(--toolbar-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--toolbar-border);
+            border-radius: 10px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        #hint-text {
+            position: fixed;
+            top: calc(50% - 20px);
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            pointer-events: none;
+            font-size: 14px;
+            color: #a0aab5;
+            font-weight: 500;
+            text-align: center;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+        #hint-text.hidden {
+            opacity: 0;
+        }
+
+        @media (max-width: 480px) {
+            .node-box {
+                font-size: 12.5px;
+                padding: 6px 12px;
+                max-width: 160px;
+                border-radius: 8px;
+                min-height: 30px;
+            }
+            .node-box.root-node {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+            .toolbar-btn {
+                min-width: 40px;
+                height: 40px;
+                padding: 0 10px;
+                font-size: 12px;
+                border-radius: 10px;
+            }
+            #toolbar {
+                padding: 6px 8px;
+                gap: 5px;
+                border-radius: 14px;
+                bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+            }
+            .node-dot {
+                --dot-r: 6px;
+                --dot-hot-r: 12px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div id="header">
-  <h1>🧠 XMind 放射</h1>
-  <span class="badge" id="node-count">0 节点</span>
-</div>
-
-<div id="canvas-wrapper">
-  <canvas id="radial-canvas"></canvas>
-</div>
-
-<div id="bottom-toolbar">
-  <div class="group">
-    <button onclick="addChild()"><span class="icon">➕</span><span class="label">子</span></button>
-    <button onclick="addSibling()"><span class="icon">↕️</span><span class="label">兄弟</span></button>
-    <button onclick="editNode()"><span class="icon">✏️</span><span class="label">编辑</span></button>
-    <button class="del" onclick="deleteNode()"><span class="icon">🗑️</span><span class="label">删除</span></button>
-  </div>
-  <div class="group">
-    <button onclick="showImportModal()"><span class="icon">📥</span><span class="label">导入</span></button>
-    <button onclick="exportImage()"><span class="icon">🖼️</span><span class="label">导出</span></button>
-    <button onclick="toggleAll(1)"><span class="icon">📂</span><span class="label">展开</span></button>
-    <button onclick="toggleAll(0)"><span class="icon">📁</span><span class="label">收起</span></button>
-  </div>
-  <div class="group">
-    <button class="zoom-btn" onclick="zoomIn()"><span class="icon">➕</span></button>
-    <button class="zoom-btn" onclick="resetView()"><span class="icon">⟲</span></button>
-    <button class="zoom-btn" onclick="zoomOut()"><span class="icon">➖</span></button>
-  </div>
-</div>
-
-<div class="modal" id="importModal">
-  <div class="modal-box">
-    <h3>📥 导入大纲</h3>
-    <p>缩进表示层级（2空格或1 Tab）</p>
-    <textarea id="importText" placeholder="年度计划&#10;  学习&#10;    前端&#10;    英语&#10;  健身&#10;    跑步"></textarea>
-    <div class="btn-row">
-      <button class="secondary" onclick="closeImportModal()">取消</button>
-      <button class="primary" onclick="importFromText()">生成导图</button>
+    <div id="canvas-container">
+        <svg id="svg-layer" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="nodes-layer"></div>
     </div>
-  </div>
-</div>
 
-<script>
-// ============================================================
-// 数据模型
-// ============================================================
-let treeData = {
-  id: 'root',
-  text: '🎯 中心主题',
-  collapsed: false,
-  color: '#1f2937',
-  children: [
-    {
-      id: 'n1',
-      text: '需求分析',
-      collapsed: false,
-      color: '#3b82f6',
-      children: [
-        { id: 'n1-1', text: '用户调研', collapsed: false, color: '#60a5fa', children: [] },
-        { id: 'n1-2', text: '竞品分析', collapsed: false, color: '#60a5fa', children: [] }
-      ]
-    },
-    {
-      id: 'n2',
-      text: '技术选型',
-      collapsed: false,
-      color: '#f59e0b',
-      children: [
-        { id: 'n2-1', text: '前端框架', collapsed: false, color: '#fbbf24', children: [] },
-        { id: 'n2-2', text: '后端语言', collapsed: false, color: '#fbbf24', children: [] }
-      ]
-    },
-    {
-      id: 'n3',
-      text: '部署上线',
-      collapsed: false,
-      color: '#8b5cf6',
-      children: [
-        { id: 'n3-1', text: '服务器配置', collapsed: false, color: '#a78bfa', children: [] }
-      ]
-    }
-  ]
-};
-let selectedId = null; // 初始无选中
-let idCounter = 100;
+    <div id="hint-text">点击小圆点选中 · 拖动空白平移画布</div>
 
-// ============================================================
-// 视图控制 + 高DPI
-// ============================================================
-const view = { scale: 1, panX: 0, panY: 0 };
-const wrapper = document.getElementById('canvas-wrapper');
-const canvas = document.getElementById('radial-canvas');
-const ctx = canvas.getContext('2d');
-let dpr = 1;
+    <div id="zoom-indicator">100%</div>
 
-function resizeCanvas() {
-  const rect = wrapper.getBoundingClientRect();
-  dpr = window.devicePixelRatio || 1;
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(dpr, dpr);
-  canvas._logicalWidth = rect.width;
-  canvas._logicalHeight = rect.height;
-}
+    <div id="toolbar">
+        <button class="toolbar-btn" data-action="add-child" title="添加子节点">
+            <span class="icon">➕</span> 子节点
+        </button>
+        <button class="toolbar-btn" data-action="add-sibling" title="添加兄弟节点">
+            <span class="icon">🔗</span> 兄弟
+        </button>
+        <button class="toolbar-btn" data-action="edit" title="编辑文字">
+            <span class="icon">✏️</span> 编辑
+        </button>
+        <button class="toolbar-btn danger" data-action="delete" title="删除节点">
+            <span class="icon">🗑️</span> 删除
+        </button>
+        <button class="toolbar-btn" data-action="expand-all" title="全部展开">展开</button>
+        <button class="toolbar-btn" data-action="collapse-all" title="全部收起">收起</button>
+        <button class="toolbar-btn" data-action="import" title="导入文本">
+            <span class="icon">📥</span> 导入
+        </button>
+        <button class="toolbar-btn primary" data-action="export-png" title="导出PNG">
+            <span class="icon">📤</span> 导出
+        </button>
+        <button class="toolbar-btn" data-action="reset-view" title="重置视图">重置</button>
+    </div>
 
-function updateTransform() {
-  canvas.style.transform = `translate(${view.panX}px, ${view.panY}px) scale(${view.scale})`;
-}
+    <div id="modal-overlay">
+        <div id="modal-box">
+            <h3>📥 导入文本生成导图</h3>
+            <textarea id="import-textarea" placeholder="支持格式：&#10;• 缩进文本（2空格=1层级）&#10;• Markdown列表（- 或 *）&#10;• 编号列表（1. 2. 3.）&#10;• 井号标题（# ## ###）&#10;&#10;示例：&#10;中心主题&#10;  分支一&#10;    子分支A&#10;    子分支B&#10;  分支二&#10;    子分支C"></textarea>
+            <div id="modal-actions">
+                <button class="modal-btn" id="modal-cancel">取消</button>
+                <button class="modal-btn primary" id="modal-confirm">生成导图</button>
+            </div>
+        </div>
+    </div>
 
-function zoomIn() { view.scale = Math.min(2.5, view.scale + 0.15); updateTransform(); drawRadial(); }
-function zoomOut() { view.scale = Math.max(0.3, view.scale - 0.15); updateTransform(); drawRadial(); }
-function resetView() { view.scale = 1; view.panX = 0; view.panY = 0; updateTransform(); drawRadial(); }
+    <script>
+        (function() {
+            // ==================== 数据模型 ====================
+            let nodeIdCounter = 0;
+            let selectedId = null;
 
-wrapper.addEventListener('wheel', function(e) {
-  e.preventDefault();
-  view.scale = Math.min(2.5, Math.max(0.3, view.scale + (e.deltaY > 0 ? -0.08 : 0.08)));
-  updateTransform(); drawRadial();
-}, { passive: false });
+            function createNode(text, parentId = null) {
+                return {
+                    id: 'n' + (++nodeIdCounter),
+                    text: text,
+                    parentId: parentId,
+                    children: [],
+                    depth: 0,
+                    angle: 0,
+                    sectorStart: 0,
+                    sectorEnd: 360,
+                    x: 0,
+                    y: 0,
+                    collapsed: false,
+                    dotOffsetX: 0,
+                    dotOffsetY: 0,
+                };
+            }
 
-// 拖动（鼠标+触屏）
-let isPanning = false, startX, startY, startPanX, startPanY;
-wrapper.addEventListener('mousedown', function(e) {
-  if (e.target === canvas || e.target === wrapper) {
-    isPanning = true;
-    startX = e.clientX; startY = e.clientY;
-    startPanX = view.panX; startPanY = view.panY;
-    wrapper.style.cursor = 'grabbing';
-  }
-});
-window.addEventListener('mousemove', function(e) {
-  if (!isPanning) return;
-  view.panX = startPanX + (e.clientX - startX) * 0.7;
-  view.panY = startPanY + (e.clientY - startY) * 0.7;
-  updateTransform(); drawRadial();
-});
-window.addEventListener('mouseup', function() {
-  if (isPanning) { isPanning = false; wrapper.style.cursor = 'grab'; }
-});
+            // 初始数据
+            let rootNode = createNode('中心主题');
+            rootNode.depth = 0;
+            let node1 = createNode('分支一', rootNode.id);
+            let node2 = createNode('分支二', rootNode.id);
+            let node3 = createNode('分支三', rootNode.id);
+            let node11 = createNode('子分支 A', node1.id);
+            let node12 = createNode('子分支 B', node1.id);
+            let node21 = createNode('子分支 C', node2.id);
+            rootNode.children = [node1, node2, node3];
+            node1.children = [node11, node12];
+            node2.children = [node21];
 
-let touchPan = null;
-wrapper.addEventListener('touchstart', function(e) {
-  if (e.target === canvas || e.target === wrapper) {
-    const t = e.touches[0];
-    touchPan = { x: t.clientX, y: t.clientY, panX: view.panX, panY: view.panY };
-  }
-}, { passive: true });
-wrapper.addEventListener('touchmove', function(e) {
-  if (!touchPan) return;
-  const t = e.touches[0];
-  view.panX = touchPan.panX + (t.clientX - touchPan.x) * 0.7;
-  view.panY = touchPan.panY + (t.clientY - touchPan.y) * 0.7;
-  updateTransform(); drawRadial();
-}, { passive: true });
-wrapper.addEventListener('touchend', function() { touchPan = null; }, { passive: true });
+            // 节点映射表
+            let nodeMap = new Map();
 
-// ============================================================
-// 核心绘制：XMind风格 + 均匀角度 + 触控小圆点
-// ============================================================
-function drawRadial() {
-  const W = canvas._logicalWidth || wrapper.clientWidth;
-  const H = canvas._logicalHeight || wrapper.clientHeight;
-  ctx.clearRect(0, 0, W, H);
-  if (!treeData) return;
+            function buildNodeMap() {
+                nodeMap.clear();
+                (function traverse(node, parent) {
+                    node.depth = parent ? parent.depth + 1 : 0;
+                    node.parentId = parent ? parent.id : null;
+                    nodeMap.set(node.id, node);
+                    node.children.forEach(ch => traverse(ch, node));
+                })(rootNode, null);
+            }
+            buildNodeMap();
 
-  // 1. 收集可见节点
-  const nodes = [];
-  function collect(node, parentId, depth) {
-    if (node.collapsed) return;
-    nodes.push({
-      id: node.id,
-      text: node.text,
-      color: node.color || '#3b82f6',
-      parentId: parentId,
-      depth: depth,
-      children: node.children || [],
-      collapsed: node.collapsed
-    });
-    if (node.children) {
-      node.children.forEach(c => collect(c, node.id, depth + 1));
-    }
-  }
-  collect(treeData, null, 0);
+            function getNode(id) { return nodeMap.get(id) || null; }
 
-  const rootNode = nodes.find(n => n.id === 'root');
-  if (!rootNode) return;
+            function getRoot() { return rootNode; }
 
-  const cx = W / 2, cy = H / 2;
-  const baseRadius = Math.min(W, H) * 0.20;
+            function getAllNodes() {
+                const result = [];
+                (function traverse(node) {
+                    result.push(node);
+                    if (!node.collapsed) {
+                        node.children.forEach(ch => traverse(ch));
+                    }
+                })(rootNode);
+                return result;
+            }
 
-  // 2. 均匀分配角度
-  function assignAngles(list, parentId, depth) {
-    const children = list.filter(n => n.parentId === parentId);
-    if (children.length === 0) return;
-    const parent = list.find(n => n.id === parentId);
-    let startAngle, endAngle;
-    if (parentId === 'root') {
-      startAngle = -Math.PI;
-      endAngle = Math.PI;
-    } else {
-      const halfRange = Math.min(0.6, Math.PI / (children.length + 1));
-      startAngle = parent.angle - halfRange;
-      endAngle = parent.angle + halfRange;
-    }
-    const range = endAngle - startAngle;
-    const step = range / children.length;
-    children.forEach((child, i) => {
-      child.angle = startAngle + step * (i + 0.5);
-      const r = baseRadius * (depth + 0.8) * 0.85;
-      child.radius = Math.min(r, Math.max(W, H) * 0.35);
-      assignAngles(list, child.id, depth + 1);
-    });
-  }
+            function getVisibleNodes() {
+                const result = [];
+                (function traverse(node) {
+                    result.push(node);
+                    if (!node.collapsed) {
+                        node.children.forEach(ch => traverse(ch));
+                    }
+                })(rootNode);
+                return result;
+            }
 
-  rootNode.angle = 0;
-  rootNode.radius = 0;
-  rootNode.x = cx;
-  rootNode.y = cy;
-  assignAngles(nodes, 'root', 1);
+            function getNodePath(nodeId) {
+                const path = [];
+                let current = getNode(nodeId);
+                while (current) {
+                    path.unshift(current);
+                    current = current.parentId ? getNode(current.parentId) : null;
+                }
+                return path;
+            }
 
-  // 3. 计算坐标
-  nodes.forEach(n => {
-    if (n.id === 'root') return;
-    const parent = nodes.find(p => p.id === n.parentId);
-    if (parent && parent.x !== undefined) {
-      const ang = n.angle || 0;
-      const r = n.radius || 60;
-      n.x = parent.x + Math.cos(ang) * r;
-      n.y = parent.y + Math.sin(ang) * r;
-    }
-  });
+            // ==================== 布局算法 ====================
+            const LAYOUT = {
+                rootToLevel1: 170,
+                level1ToLevel2: 130,
+                level2ToLevel3: 110,
+                deeper: 95,
+                minSectorAngle: 15,
+            };
 
-  // 4. 绘制连线
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  nodes.forEach(n => {
-    if (n.id === 'root') return;
-    const parent = nodes.find(p => p.id === n.parentId);
-    if (parent && parent.x !== undefined) {
-      const midX = (parent.x + n.x) / 2 + (n.y - parent.y) * 0.2;
-      const midY = (parent.y + n.y) / 2 - (n.x - parent.x) * 0.2;
-      ctx.beginPath();
-      ctx.moveTo(parent.x, parent.y);
-      ctx.quadraticCurveTo(midX, midY, n.x, n.y);
-      ctx.strokeStyle = '#d1d5db';
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = 'rgba(0,0,0,0.02)';
-      ctx.shadowBlur = 4;
-      ctx.stroke();
-      ctx.shadowColor = 'transparent';
-    }
-  });
+            function getDistance(depth) {
+                if (depth === 0) return 0;
+                if (depth === 1) return LAYOUT.rootToLevel1;
+                if (depth === 2) return LAYOUT.level1ToLevel2;
+                if (depth === 3) return LAYOUT.level2ToLevel3;
+                return LAYOUT.deeper;
+            }
 
-  // 5. 绘制节点 + 触控小圆点
-  nodes.forEach(n => {
-    const x = n.x, y = n.y;
-    if (x === undefined || y === undefined) return;
-    const isRoot = n.id === 'root';
-    const w = isRoot ? 120 : 80;
-    const h = isRoot ? 44 : 36;
-    const radius = isRoot ? 22 : 18;
-    const color = n.color || (isRoot ? '#1f2937' : '#3b82f6');
+            function calculateLayout() {
+                // 递归计算扇区
+                function assignSectors(node, sectorStart, sectorEnd) {
+                    node.sectorStart = sectorStart;
+                    node.sectorEnd = sectorEnd;
+                    const childCount = node.children.length;
+                    if (childCount === 0) return;
+                    const sectorSize = sectorEnd - sectorStart;
+                    const perChild = sectorSize / childCount;
+                    node.children.forEach((child, i) => {
+                        const childStart = sectorStart + i * perChild;
+                        const childEnd = childStart + perChild;
+                        const childCenter = childStart + perChild / 2;
+                        child.angle = childCenter;
+                        assignSectors(child, childStart, childEnd);
+                    });
+                }
+                // 根节点：360°完整扇区
+                assignSectors(rootNode, 0, 360);
+                // 计算坐标
+                (function computePositions(node, parentX, parentY, parentAngle) {
+                    if (node.depth === 0) {
+                        node.x = 0;
+                        node.y = 0;
+                        node.angle = 0;
+                    } else {
+                        const dist = getDistance(node.depth);
+                        const rad = (node.angle - 90) * Math.PI / 180;
+                        node.x = parentX + Math.cos(rad) * dist;
+                        node.y = parentY + Math.sin(rad) * dist;
+                    }
+                    if (!node.collapsed) {
+                        node.children.forEach(ch => computePositions(ch, node.x, node.y, node.angle));
+                    }
+                })(rootNode, 0, 0, 0);
+            }
 
-    // ---- 节点方框 ----
-    ctx.shadowColor = 'rgba(0,0,0,0.06)';
-    ctx.shadowBlur = 16;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 4;
-    ctx.beginPath();
-    ctx.moveTo(x - w/2 + radius, y - h/2);
-    ctx.lineTo(x + w/2 - radius, y - h/2);
-    ctx.quadraticCurveTo(x + w/2, y - h/2, x + w/2, y - h/2 + radius);
-    ctx.lineTo(x + w/2, y + h/2 - radius);
-    ctx.quadraticCurveTo(x + w/2, y + h/2, x + w/2 - radius, y + h/2);
-    ctx.lineTo(x - w/2 + radius, y + h/2);
-    ctx.quadraticCurveTo(x - w/2, y + h/2, x - w/2, y + h/2 - radius);
-    ctx.lineTo(x - w/2, y - h/2 + radius);
-    ctx.quadraticCurveTo(x - w/2, y - h/2, x - w/2 + radius, y - h/2);
-    ctx.closePath();
-    const grad = ctx.createLinearGradient(x - w/2, y - h/2, x + w/2, y + h/2);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, darkenColor(color, 0.1));
-    ctx.fillStyle = grad;
-    ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+            // ==================== 渲染 ====================
+            const container = document.getElementById('canvas-container');
+            const svgLayer = document.getElementById('svg-layer');
+            const nodesLayer = document.getElementById('nodes-layer');
+            const zoomIndicator = document.getElementById('zoom-indicator');
+            const hintText = document.getElementById('hint-text');
 
-    // ---- 选中边框 ----
-    if (selectedId === n.id) {
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 3.5;
-      ctx.shadowColor = 'rgba(245,158,11,0.3)';
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.moveTo(x - w/2 + radius, y - h/2);
-      ctx.lineTo(x + w/2 - radius, y - h/2);
-      ctx.quadraticCurveTo(x + w/2, y - h/2, x + w/2, y - h/2 + radius);
-      ctx.lineTo(x + w/2, y + h/2 - radius);
-      ctx.quadraticCurveTo(x + w/2, y + h/2, x + w/2 - radius, y + h/2);
-      ctx.lineTo(x - w/2 + radius, y + h/2);
-      ctx.quadraticCurveTo(x - w/2, y + h/2, x - w/2, y + h/2 - radius);
-      ctx.lineTo(x - w/2, y - h/2 + radius);
-      ctx.quadraticCurveTo(x - w/2, y - h/2, x - w/2 + radius, y - h/2);
-      ctx.closePath();
-      ctx.stroke();
-      ctx.shadowColor = 'transparent';
-    }
+            let view = { scale: 1, panX: 0, panY: 0 };
+            let isDragging = false;
+            let dragStartX = 0,
+                dragStartY = 0;
+            let dragPanStartX = 0,
+                dragPanStartY = 0;
+            let draggedDistance = 0;
+            const DRAG_THRESHOLD = 5;
 
-    // ---- 文字 ----
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = isRoot ? 'bold 16px -apple-system, "Segoe UI", Roboto, sans-serif' : '600 14px -apple-system, "Segoe UI", Roboto, sans-serif';
-    ctx.textRendering = 'optimizeLegibility';
-    if (!isRoot) {
-      ctx.shadowColor = 'rgba(0,0,0,0.1)';
-      ctx.shadowBlur = 4;
-    }
-    let displayText = n.text;
-    const maxWidth = isRoot ? 100 : 70;
-    if (ctx.measureText(displayText).width > maxWidth) {
-      while (ctx.measureText(displayText + '…').width > maxWidth && displayText.length > 1) {
-        displayText = displayText.slice(0, -1);
-      }
-      displayText += '…';
-    }
-    ctx.fillText(displayText, x, y + 1);
-    ctx.shadowColor = 'transparent';
+            function screenToCanvas(sx, sy) {
+                const rect = container.getBoundingClientRect();
+                const x = (sx - rect.left - view.panX) / view.scale;
+                const y = (sy - rect.top - view.panY) / view.scale;
+                return { x, y };
+            }
 
-    // ---- 触控小圆点 ----
-    if (!isRoot) {
-      const dotX = x - w/2 - 12;
-      const dotY = y;
-      const dotR = 7;
-      // 外发光
-      ctx.shadowColor = 'rgba(255,255,255,0.8)';
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(dotX, dotY, dotR, 0, 2 * Math.PI);
-      ctx.fillStyle = selectedId === n.id ? '#f59e0b' : '#6b7280';
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      // 存储热区（半径扩大）
-      n._dotX = dotX;
-      n._dotY = dotY;
-      n._dotR = dotR + 28; // 热区半径35px
-    }
-  });
+            function canvasToScreen(cx, cy) {
+                const rect = container.getBoundingClientRect();
+                return {
+                    x: rect.left + cx * view.scale + view.panX,
+                    y: rect.top + cy * view.scale + view.panY,
+                };
+            }
 
-  document.getElementById('node-count').textContent = nodes.length + ' 节点';
-  canvas._clickNodes = nodes;
-}
+            function render() {
+                calculateLayout();
+                renderSVG();
+                renderNodes();
+                updateZoomIndicator();
+            }
 
-function darkenColor(hex, amount) {
-  let c = hex.replace('#', '');
-  let r = parseInt(c.substring(0,2),16);
-  let g = parseInt(c.substring(2,4),16);
-  let b = parseInt(c.substring(4,6),16);
-  r = Math.max(0, r - r * amount);
-  g = Math.max(0, g - g * amount);
-  b = Math.max(0, b - b * amount);
-  return '#' + [r,g,b].map(x => Math.round(x).toString(16).padStart(2,'0')).join('');
-}
+            function renderSVG() {
+                const rect = container.getBoundingClientRect();
+                svgLayer.setAttribute('width', rect.width);
+                svgLayer.setAttribute('height', rect.height);
+                svgLayer.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+                let svgContent = '';
+                const visibleNodes = getVisibleNodes();
 
-// ============================================================
-// 交互事件：修正坐标转换
-// ============================================================
-canvas.addEventListener('click', function(e) {
-  const rect = canvas.getBoundingClientRect();
-  // 直接使用CSS transform反算逻辑坐标
-  const x = (e.clientX - rect.left - view.panX) / view.scale;
-  const y = (e.clientY - rect.top - view.panY) / view.scale;
+                visibleNodes.forEach(node => {
+                    if (node.depth === 0 || !node.parentId) return;
+                    const parent = getNode(node.parentId);
+                    if (!parent) return;
+                    const from = canvasToScreen(parent.x, parent.y);
+                    const to = canvasToScreen(node.x, node.y);
+                    // 计算连线起终点（从节点边缘）
+                    const fromEdge = getEdgePoint(parent, node, from);
+                    const toEdge = getEdgePoint(node, parent, to, true);
+                    // 贝塞尔曲线控制点
+                    const mx = (fromEdge.x + toEdge.x) / 2;
+                    const my = (fromEdge.y + toEdge.y) / 2;
+                    const cp1x = fromEdge.x + (mx - fromEdge.x) * 0.5;
+                    const cp1y = fromEdge.y + (my - fromEdge.y) * 0.5;
+                    const cp2x = toEdge.x + (mx - toEdge.x) * 0.5;
+                    const cp2y = toEdge.y + (my - toEdge.y) * 0.5;
+                    svgContent +=
+                        `<path d="M ${fromEdge.x} ${fromEdge.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${toEdge.x} ${toEdge.y}" stroke="${getLineColor(node.depth)}" stroke-width="${varLineWidth(node.depth)}" fill="none" stroke-linecap="round" opacity="0.7"/>`;
+                });
+                svgLayer.innerHTML = svgContent;
+            }
 
-  const nodes = canvas._clickNodes || [];
-  let hit = false;
-  // 从后往前遍历（上层节点优先）
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const n = nodes[i];
-    if (n.id === 'root') continue;
-    if (n._dotX === undefined) continue;
-    const dx = x - n._dotX, dy = y - n._dotY;
-    if (dx*dx + dy*dy < n._dotR * n._dotR) {
-      // 切换选中状态
-      if (selectedId === n.id) {
-        selectedId = null;
-      } else {
-        selectedId = n.id;
-      }
-      drawRadial();
-      hit = true;
-      break;
-    }
-  }
-  if (!hit) {
-    selectedId = null;
-    drawRadial();
-  }
-});
+            function getLineColor(depth) {
+                const colors = ['#b0c4de', '#b8c9dd', '#c2d0e0', '#ccd6e2', '#d5dde6'];
+                return colors[Math.min(depth - 1, colors.length - 1)] || '#d5dde6';
+            }
 
-canvas.addEventListener('dblclick', function(e) {
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left - view.panX) / view.scale;
-  const y = (e.clientY - rect.top - view.panY) / view.scale;
+            function varLineWidth(depth) {
+                const widths = [2.2, 1.8, 1.5, 1.3, 1.1];
+                return widths[Math.min(depth - 1, widths.length - 1)] || 1;
+            }
 
-  const nodes = canvas._clickNodes || [];
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const n = nodes[i];
-    if (n.id === 'root') continue;
-    if (n._dotX === undefined) continue;
-    const dx = x - n._dotX, dy = y - n._dotY;
-    if (dx*dx + dy*dy < n._dotR * n._dotR) {
-      const node = findNode(treeData, n.id);
-      if (node) {
-        const newText = prompt('修改文字:', node.text);
-        if (newText !== null && newText.trim() !== '') {
-          node.text = newText.trim();
-          drawRadial();
-        }
-      }
-      return;
-    }
-  }
-});
+            function getEdgePoint(fromNode, toNode, screenPos, isTo = false) {
+                // 简化：使用节点中心点，偏移小量
+                const offset = 12;
+                const dx = screenPos.x - (isTo ? canvasToScreen(fromNode.x, fromNode.y).x : canvasToScreen(toNode.x, toNode.y)
+                    .x);
+                const dy = screenPos.y - (isTo ? canvasToScreen(fromNode.x, fromNode.y).y : canvasToScreen(toNode.x, toNode.y)
+                    .y);
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const nx = dx / dist;
+                const ny = dy / dist;
+                return {
+                    x: screenPos.x - nx * offset,
+                    y: screenPos.y - ny * offset,
+                };
+            }
 
-// ============================================================
-// 数据操作
-// ============================================================
-function findNode(node, id) {
-  if (node.id === id) return node;
-  if (node.children) {
-    for (let c of node.children) {
-      const found = findNode(c, id);
-      if (found) return found;
-    }
-  }
-  return null;
-}
+            function renderNodes() {
+                const visibleNodes = getVisibleNodes();
+                nodesLayer.innerHTML = '';
+                visibleNodes.forEach(node => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'node-wrapper';
+                    wrapper.dataset.nodeId = node.id;
+                    const screenPos = canvasToScreen(node.x, node.y);
+                    wrapper.style.left = (screenPos.x - container.getBoundingClientRect().left) + 'px';
+                    wrapper.style.top = (screenPos.y - container.getBoundingClientRect().top) + 'px';
+                    wrapper.style.transform = 'translate(-50%, -50%)';
 
-function findParent(node, targetId, parent = null) {
-  if (node.id === targetId) return parent;
-  if (node.children) {
-    for (let c of node.children) {
-      const found = findParent(c, targetId, node);
-      if (found !== undefined) return found;
-    }
-  }
-  return undefined;
-}
+                    // 节点框
+                    const box = document.createElement('div');
+                    box.className = 'node-box';
+                    if (node.depth === 0) box.classList.add('root-node');
+                    else if (node.depth === 1) box.classList.add('level-1');
+                    else if (node.depth === 2) box.classList.add('level-2');
+                    else box.classList.add('level-3');
+                    if (node.id === selectedId) box.classList.add('selected');
+                    box.textContent = node.text;
+                    box.dataset.nodeId = node.id;
+                    box.style.pointerEvents = 'auto';
+                    box.style.cursor = 'grab';
 
-function countNodes(node) {
-  let c = 1;
-  if (node.children) {
-    for (let ch of node.children) c += countNodes(ch);
-  }
-  return c;
-}
+                    // 小圆点
+                    const dot = document.createElement('div');
+                    dot.className = 'node-dot';
+                    if (node.id === selectedId) dot.classList.add('active');
+                    dot.dataset.nodeId = node.id;
+                    dot.style.pointerEvents = 'auto';
+                    dot.style.cursor = 'pointer';
+                    dot.style.touchAction = 'none';
 
-function addChild() {
-  if (!selectedId) { alert('请先点击一个小圆点选中节点'); return; }
-  const parent = findNode(treeData, selectedId);
-  if (!parent) { alert('选中节点不存在'); return; }
-  if (!parent.children) parent.children = [];
-  const colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
-  const newColor = colors[parent.children.length % colors.length];
-  parent.children.push({
-    id: 'id-' + (idCounter++),
-    text: '新分支',
-    collapsed: false,
-    color: newColor,
-    children: []
-  });
-  drawRadial();
-}
+                    // 计算小圆点位置（在节点框外侧）
+                    const dotSide = getDotSide(node);
+                    const dotR = 7;
+                    const hotR = 13;
+                    const dotOffset = 16;
+                    if (dotSide === 'right') {
+                        dot.style.right = (-dotOffset) + 'px';
+                        dot.style.top = '50%';
+                        dot.style.transform = 'translateY(-50%)';
+                        node.dotOffsetX = dotOffset;
+                        node.dotOffsetY = 0;
+                    } else if (dotSide === 'left') {
+                        dot.style.left = (-dotOffset) + 'px';
+                        dot.style.top = '50%';
+                        dot.style.transform = 'translateY(-50%)';
+                        node.dotOffsetX = -dotOffset;
+                        node.dotOffsetY = 0;
+                    } else if (dotSide === 'top') {
+                        dot.style.top = (-dotOffset) + 'px';
+                        dot.style.left = '50%';
+                        dot.style.transform = 'translateX(-50%)';
+                        node.dotOffsetX = 0;
+                        node.dotOffsetY = -dotOffset;
+                    } else {
+                        dot.style.bottom = (-dotOffset) + 'px';
+                        dot.style.left = '50%';
+                        dot.style.transform = 'translateX(-50%)';
+                        node.dotOffsetX = 0;
+                        node.dotOffsetY = dotOffset;
+                    }
 
-function addSibling() {
-  if (!selectedId || selectedId === 'root') { alert('请先选中一个非根节点'); return; }
-  const parent = findParent(treeData, selectedId);
-  if (!parent) return;
-  let idx = parent.children.findIndex(c => c.id === selectedId);
-  if (idx === -1) return;
-  const colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
-  const newColor = colors[parent.children.length % colors.length];
-  parent.children.splice(idx + 1, 0, {
-    id: 'id-' + (idCounter++),
-    text: '同级分支',
-    collapsed: false,
-    color: newColor,
-    children: []
-  });
-  drawRadial();
-}
+                    wrapper.appendChild(box);
+                    wrapper.appendChild(dot);
+                    nodesLayer.appendChild(wrapper);
+                });
+                updateHintVisibility();
+            }
 
-function editNode() {
-  if (!selectedId) { alert('请先点击小圆点选中节点'); return; }
-  const node = findNode(treeData, selectedId);
-  if (!node) return;
-  const newText = prompt('修改文字:', node.text);
-  if (newText !== null && newText.trim() !== '') {
-    node.text = newText.trim();
-    drawRadial();
-  }
-}
+            function getDotSide(node) {
+                if (node.depth === 0) return 'bottom';
+                const parent = getNode(node.parentId);
+                if (!parent) return 'right';
+                const dx = node.x - parent.x;
+                const dy = node.y - parent.y;
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                if (angle > -45 && angle <= 45) return 'right';
+                if (angle > 45 && angle <= 135) return 'bottom';
+                if (angle > 135 || angle <= -135) return 'left';
+                return 'top';
+            }
 
-function deleteNode() {
-  if (!selectedId || selectedId === 'root') { alert('请先选中一个非根节点'); return; }
-  if (!confirm('删除该节点及其所有子节点？')) return;
-  const parent = findParent(treeData, selectedId);
-  if (!parent) return;
-  parent.children = parent.children.filter(c => c.id !== selectedId);
-  selectedId = null;
-  drawRadial();
-}
+            function updateHintVisibility() {
+                const visibleNodes = getVisibleNodes();
+                if (visibleNodes.length <= 1) {
+                    hintText.classList.remove('hidden');
+                } else {
+                    hintText.classList.add('hidden');
+                }
+            }
 
-function toggleAll(expand) {
-  function walk(node) {
-    node.collapsed = !expand;
-    if (node.children) node.children.forEach(walk);
-  }
-  walk(treeData);
-  drawRadial();
-}
+            function updateZoomIndicator() {
+                zoomIndicator.textContent = Math.round(view.scale * 100) + '%';
+            }
 
-// ---- 导入 ----
-function showImportModal() {
-  document.getElementById('importModal').classList.add('active');
-}
-function closeImportModal() {
-  document.getElementById('importModal').classList.remove('active');
-}
-function importFromText() {
-  const text = document.getElementById('importText').value;
-  if (!text.trim()) { alert('请输入内容'); return; }
-  const lines = text.split('\n').filter(l => l.trim());
-  const root = { id: 'root', text: '📖 书摘', collapsed: false, color: '#1f2937', children: [] };
-  const stack = [{ node: root, level: 0 }];
-  const colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
-  for (let line of lines) {
-    const indent = line.match(/^[\s\t]*/)[0].length;
-    const level = Math.floor(indent / 2);
-    const content = line.trim();
-    const newNode = {
-      id: 'id-' + (idCounter++),
-      text: content,
-      collapsed: false,
-      color: colors[level % colors.length],
-      children: []
-    };
-    while (stack.length > 1 && stack[stack.length-1].level >= level) stack.pop();
-    const parent = stack[stack.length-1].node;
-    if (!parent.children) parent.children = [];
-    parent.children.push(newNode);
-    stack.push({ node: newNode, level: level });
-  }
-  treeData = root;
-  selectedId = null;
-  closeImportModal();
-  drawRadial();
-}
+            // ==================== 小圆点热区检测（核心） ====================
+            function getDotCenterOnScreen(node) {
+                const rect = container.getBoundingClientRect();
+                const nodeScreen = canvasToScreen(node.x, node.y);
+                const dotOffsetX = node.dotOffsetX || 0;
+                const dotOffsetY = node.dotOffsetY || 0;
+                const scale = view.scale;
+                // 小圆点偏移是在节点框坐标系中，需要转换为屏幕坐标
+                const dotScreenX = nodeScreen.x + dotOffsetX * scale;
+                const dotScreenY = nodeScreen.y + dotOffsetY * scale;
+                return { x: dotScreenX, y: dotScreenY };
+            }
 
-function exportImage() {
-  alert('📸 请使用手机截图功能保存。');
-}
+            function hitTestDot(clientX, clientY) {
+                const visibleNodes = getVisibleNodes();
+                const HOT_RADIUS = 13; // 热区半径13px（屏幕像素）
+                // 从最深层级开始检测（后渲染的在上层，但这里按深度倒序更合理）
+                const sortedNodes = [...visibleNodes].sort((a, b) => b.depth - a.depth);
+                for (const node of sortedNodes) {
+                    const dotCenter = getDotCenterOnScreen(node);
+                    const dx = clientX - dotCenter.x;
+                    const dy = clientY - dotCenter.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist <= HOT_RADIUS) {
+                        return node.id;
+                    }
+                }
+                return null;
+            }
 
-// ============================================================
-// 窗口变化 & 启动
-// ============================================================
-window.addEventListener('resize', function() {
-  resizeCanvas();
-  drawRadial();
-});
+            function hitTestNodeBox(clientX, clientY) {
+                const visibleNodes = getVisibleNodes();
+                const sortedNodes = [...visibleNodes].sort((a, b) => b.depth - a.depth);
+                for (const node of sortedNodes) {
+                    const nodeScreen = canvasToScreen(node.x, node.y);
+                    // 粗略检测：在节点框范围内
+                    const boxW = 80 + Math.min(node.text.length * 12, 140);
+                    const boxH = 36;
+                    if (Math.abs(clientX - nodeScreen.x) < boxW / 2 * view.scale &&
+                        Math.abs(clientY - nodeScreen.y) < boxH / 2 * view.scale) {
+                        return node.id;
+                    }
+                }
+                return null;
+            }
 
-resizeCanvas();
-drawRadial();
-</script>
-</body>
-</html>
+            // ==================== 事件处理 ====================
+            let activePointerId = null;
+            let pointerStartClientX = 0,
+                pointerStartClientY = 0;
+            let pointerStartPanX = 0,
+                pointerStartPanY = 0;
+            let isPointerDown = false;
+            let pointerMoved = false;
+            let pointerOnDot = false;
+            let pointerOnNodeBox = false;
+            let pointerNodeId = null;
+
+            container.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('.node-dot')) {
+                    // 点击了小圆点：选中节点
+                    const nodeId = e.target.closest('.node-dot').dataset.nodeId;
+                    if (nodeId) {
+                        selectNode(nodeId);
+                    }
+                    e.preventDefault();
+                    return;
+                }
+                // 点击节点框或空白：开始可能的拖动画布
+                isPointerDown = true;
+                activePointerId = e.pointerId;
+                pointerStartClientX = e.clientX;
+                pointerStartClientY = e.clientY;
+                pointerStartPanX = view.panX;
+                pointerStartPanY = view.panY;
+                pointerMoved = false;
+                draggedDistance = 0;
+                isDragging = false;
+                container.classList.add('dragging');
+                container.setPointerCapture(e.pointerId);
+                e.preventDefault();
+            });
+
+            container.addEventListener('pointermove', (e) => {
+                if (!isPointerDown || e.pointerId !== activePointerId) return;
+                
