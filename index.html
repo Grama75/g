@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>XMind 放射 · 热区增大</title>
+<title>XMind 放射 · 坐标修正</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f5f7fa;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#1f2937}
@@ -201,7 +201,7 @@ wrapper.addEventListener('touchmove', function(e) {
 wrapper.addEventListener('touchend', function() { touchPan = null; }, { passive: true });
 
 // ============================================================
-// 核心绘制：XMind风格 + 均匀角度 + 触控小圆点（热区增大）
+// 核心绘制：XMind风格 + 均匀角度 + 触控小圆点
 // ============================================================
 function drawRadial() {
   const W = canvas._logicalWidth || wrapper.clientWidth;
@@ -375,12 +375,12 @@ function drawRadial() {
     ctx.fillText(displayText, x, y + 1);
     ctx.shadowColor = 'transparent';
 
-    // ---- 触控小圆点（独立于方框之外，深色带外发光） ----
+    // ---- 触控小圆点 ----
     if (!isRoot) {
       const dotX = x - w/2 - 12;
       const dotY = y;
       const dotR = 7;
-      // 外发光（白色半透明，增强辨识度）
+      // 外发光
       ctx.shadowColor = 'rgba(255,255,255,0.8)';
       ctx.shadowBlur = 10;
       ctx.beginPath();
@@ -388,14 +388,13 @@ function drawRadial() {
       ctx.fillStyle = selectedId === n.id ? '#f59e0b' : '#6b7280';
       ctx.fill();
       ctx.shadowColor = 'transparent';
-      // 边框
       ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
-      // ----- 关键修改：热区半径从 dotR+8 增大到 dotR+28 -----
+      // 存储热区（半径扩大）
       n._dotX = dotX;
       n._dotY = dotY;
-      n._dotR = dotR + 28; // 原为 +8，现改为 +28，热区半径达35px
+      n._dotR = dotR + 28; // 热区半径35px
     }
   });
 
@@ -415,18 +414,13 @@ function darkenColor(hex, amount) {
 }
 
 // ============================================================
-// 交互事件：点击小圆点选中/取消选中，点击空白取消选中
+// 交互事件：修正坐标转换
 // ============================================================
 canvas.addEventListener('click', function(e) {
   const rect = canvas.getBoundingClientRect();
-  const W = canvas._logicalWidth || rect.width;
-  const H = canvas._logicalHeight || rect.height;
-  const scaleX = W / rect.width;
-  const scaleY = H / rect.height;
-  let mx = (e.clientX - rect.left) * scaleX;
-  let my = (e.clientY - rect.top) * scaleY;
-  mx = (mx - view.panX * scaleX) / view.scale;
-  my = (my - view.panY * scaleY) / view.scale;
+  // 直接使用CSS transform反算逻辑坐标
+  const x = (e.clientX - rect.left - view.panX) / view.scale;
+  const y = (e.clientY - rect.top - view.panY) / view.scale;
 
   const nodes = canvas._clickNodes || [];
   let hit = false;
@@ -435,11 +429,11 @@ canvas.addEventListener('click', function(e) {
     const n = nodes[i];
     if (n.id === 'root') continue;
     if (n._dotX === undefined) continue;
-    const dx = mx - n._dotX, dy = my - n._dotY;
+    const dx = x - n._dotX, dy = y - n._dotY;
     if (dx*dx + dy*dy < n._dotR * n._dotR) {
       // 切换选中状态
       if (selectedId === n.id) {
-        selectedId = null; // 取消选中
+        selectedId = null;
       } else {
         selectedId = n.id;
       }
@@ -448,31 +442,23 @@ canvas.addEventListener('click', function(e) {
       break;
     }
   }
-  // 如果点击空白区域（非小圆点），取消选中
   if (!hit) {
     selectedId = null;
     drawRadial();
   }
 });
 
-// 双击编辑（点击小圆点）
 canvas.addEventListener('dblclick', function(e) {
   const rect = canvas.getBoundingClientRect();
-  const W = canvas._logicalWidth || rect.width;
-  const H = canvas._logicalHeight || rect.height;
-  const scaleX = W / rect.width;
-  const scaleY = H / rect.height;
-  let mx = (e.clientX - rect.left) * scaleX;
-  let my = (e.clientY - rect.top) * scaleY;
-  mx = (mx - view.panX * scaleX) / view.scale;
-  my = (my - view.panY * scaleY) / view.scale;
+  const x = (e.clientX - rect.left - view.panX) / view.scale;
+  const y = (e.clientY - rect.top - view.panY) / view.scale;
 
   const nodes = canvas._clickNodes || [];
   for (let i = nodes.length - 1; i >= 0; i--) {
     const n = nodes[i];
     if (n.id === 'root') continue;
     if (n._dotX === undefined) continue;
-    const dx = mx - n._dotX, dy = my - n._dotY;
+    const dx = x - n._dotX, dy = y - n._dotY;
     if (dx*dx + dy*dy < n._dotR * n._dotR) {
       const node = findNode(treeData, n.id);
       if (node) {
