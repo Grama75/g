@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>XMind 高品质放射</title>
+<title>XMind 均匀放射</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f5f7fa;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#333}
+body{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f5f7fa;display:flex;flex-direction:column;height:100vh;overflow:hidden;color:#1f2937}
 
 #header{background:#ffffff;padding:8px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e8eaed;flex-shrink:0;height:44px}
 #header h1{font-size:17px;font-weight:600;color:#1f2937;letter-spacing:-0.3px}
@@ -44,7 +44,7 @@ body{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Robot
 <body>
 
 <div id="header">
-  <h1>🧠 思维导图</h1>
+  <h1>🧠 XMind 放射</h1>
   <span class="badge" id="node-count">0 节点</span>
 </div>
 
@@ -135,7 +135,7 @@ const view = { scale: 1, panX: 0, panY: 0 };
 const wrapper = document.getElementById('canvas-wrapper');
 const canvas = document.getElementById('radial-canvas');
 const ctx = canvas.getContext('2d');
-let dpr = 1; // 设备像素比
+let dpr = 1;
 
 function resizeCanvas() {
   const rect = wrapper.getBoundingClientRect();
@@ -144,30 +144,13 @@ function resizeCanvas() {
   canvas.height = rect.height * dpr;
   canvas.style.width = rect.width + 'px';
   canvas.style.height = rect.height + 'px';
-  ctx.scale(dpr, dpr);
-  // 重新设置缩放比例以匹配CSS像素
-  // 由于我们用CSS宽高控制显示，canvas的绘制尺寸是逻辑像素*dpr，所以绘制时需将坐标按逻辑像素
-  // 因此我们重新设置ctx的缩放，让后续绘制都在逻辑像素下进行
-  // 但实际上我们在绘制时使用逻辑像素，所以需要重置变换
-  // 更好的方式：不使用ctx.scale，而是直接用canvas.width/height设置逻辑尺寸，但为了清晰度，我们保留dpr缩放。
-  // 我们采用方法：canvas的逻辑宽高 = 物理宽高/dpr，但为了绘制清晰，我们使用物理宽高，然后用scale将坐标映射。
-  // 下面采用更通用的方式：将坐标系原点设为左上角，然后所有绘制使用逻辑像素，但最终显示时dpr自动缩放。
-  // 但canvas的绘图API是像素操作的，所以我们让canvas尺寸等于物理像素，然后通过scale缩放。
-  // 我们维护一个逻辑宽高，即wrapper.clientWidth/Height，然后绘制时乘以dpr。
-  // 但为简化，我们直接使用物理尺寸绘制，坐标也乘以dpr，但文字需调整大小。
-  // 更好的方案：始终使用CSS像素，不放大canvas尺寸，但设置canvas的CSS宽高为实际尺寸，并设置canvas.width/height为实际尺寸*dpr，然后ctx.scale(dpr,dpr)。
-  // 这样所有绘制坐标都是CSS像素，文字大小也是CSS像素，显示清晰。
-  // 但是之前我们用了ctx.scale，现在重新调整。
-  // 重新设置ctx变换
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(dpr, dpr);
-  // 保存逻辑宽高
   canvas._logicalWidth = rect.width;
   canvas._logicalHeight = rect.height;
 }
 
 function updateTransform() {
-  // 由于canvas已缩放，transform必须作用在CSS像素上，我们通过CSS transform来缩放和平移
   canvas.style.transform = `translate(${view.panX}px, ${view.panY}px) scale(${view.scale})`;
 }
 
@@ -178,8 +161,7 @@ function resetView() { view.scale = 1; view.panX = 0; view.panY = 0; updateTrans
 wrapper.addEventListener('wheel', function(e) {
   e.preventDefault();
   view.scale = Math.min(2.5, Math.max(0.3, view.scale + (e.deltaY > 0 ? -0.08 : 0.08)));
-  updateTransform();
-  drawRadial();
+  updateTransform(); drawRadial();
 }, { passive: false });
 
 // 拖动（鼠标+触屏）
@@ -219,13 +201,12 @@ wrapper.addEventListener('touchmove', function(e) {
 wrapper.addEventListener('touchend', function() { touchPan = null; }, { passive: true });
 
 // ============================================================
-// 核心绘制（高品质）
+// 核心绘制：XMind风格 + 均匀角度
 // ============================================================
 function drawRadial() {
-  const logicalWidth = canvas._logicalWidth || wrapper.clientWidth;
-  const logicalHeight = canvas._logicalHeight || wrapper.clientHeight;
-  // 清除画布（使用逻辑坐标）
-  ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+  const W = canvas._logicalWidth || wrapper.clientWidth;
+  const H = canvas._logicalHeight || wrapper.clientHeight;
+  ctx.clearRect(0, 0, W, H);
   if (!treeData) return;
 
   // 1. 收集可见节点
@@ -242,31 +223,47 @@ function drawRadial() {
       collapsed: node.collapsed
     });
     if (node.children) {
-      node.children.forEach(function(c) { collect(c, node.id, depth + 1); });
+      node.children.forEach(c => collect(c, node.id, depth + 1));
     }
   }
   collect(treeData, null, 0);
 
-  const rootNode = nodes.find(function(n) { return n.id === 'root'; });
+  const rootNode = nodes.find(n => n.id === 'root');
   if (!rootNode) return;
 
-  const cx = logicalWidth / 2, cy = logicalHeight / 2;
-  const baseRadius = Math.min(logicalWidth, logicalHeight) * 0.20;
+  const cx = W / 2, cy = H / 2;
+  const baseRadius = Math.min(W, H) * 0.20;
 
-  // 2. 分配角度和半径（防重叠算法）
-  function assignAngles(list, parentId, startAngle, endAngle, depth) {
-    var children = list.filter(function(n) { return n.parentId === parentId; });
+  // 2. 均匀分配角度（核心算法）
+  function assignAngles(list, parentId, depth) {
+    // 获取直接子节点
+    const children = list.filter(n => n.parentId === parentId);
     if (children.length === 0) return;
-    var range = endAngle - startAngle;
-    var step = range / children.length;
-    // 根据子节点数量动态调整角度范围，防止重叠
-    var halfRange = Math.min(step * 0.6, Math.PI / 2.5);
-    children.forEach(function(child, i) {
+
+    // 确定该父节点的角度范围：如果父节点是根，范围是 -PI ~ PI；否则根据父节点的角度和半径计算
+    const parent = list.find(n => n.id === parentId);
+    let startAngle, endAngle;
+    if (parentId === 'root') {
+      startAngle = -Math.PI;
+      endAngle = Math.PI;
+    } else {
+      // 父节点所在角度，以及它的“扇区”宽度（与父节点的半径和子节点数量相关）
+      // 这里我们设定扇区宽度为父节点所在半径的弧长，但我们简化为固定角度范围
+      // 更好的方法：根据父节点的半径和子节点数量动态计算
+      const halfRange = Math.min(0.6, Math.PI / (children.length + 1));
+      startAngle = parent.angle - halfRange;
+      endAngle = parent.angle + halfRange;
+    }
+
+    const range = endAngle - startAngle;
+    const step = range / children.length;
+    children.forEach((child, i) => {
       child.angle = startAngle + step * (i + 0.5);
-      var r = baseRadius * (depth + 0.8) * 0.85;
-      child.radius = Math.min(r, Math.max(logicalWidth, logicalHeight) * 0.35);
+      // 半径随深度增加
+      const r = baseRadius * (depth + 0.8) * 0.85;
+      child.radius = Math.min(r, Math.max(W, H) * 0.35);
       // 递归分配子节点
-      assignAngles(list, child.id, child.angle - halfRange, child.angle + halfRange, depth + 1);
+      assignAngles(list, child.id, depth + 1);
     });
   }
 
@@ -274,33 +271,29 @@ function drawRadial() {
   rootNode.radius = 0;
   rootNode.x = cx;
   rootNode.y = cy;
-  assignAngles(nodes, 'root', -Math.PI * 0.6, Math.PI * 0.6, 1);
+  assignAngles(nodes, 'root', 1);
 
   // 3. 计算坐标
-  nodes.forEach(function(n) {
+  nodes.forEach(n => {
     if (n.id === 'root') return;
-    var parent = nodes.find(function(p) { return p.id === n.parentId; });
+    const parent = nodes.find(p => p.id === n.parentId);
     if (parent && parent.x !== undefined) {
-      var ang = n.angle || 0;
-      var r = n.radius || 60;
+      const ang = n.angle || 0;
+      const r = n.radius || 60;
       n.x = parent.x + Math.cos(ang) * r;
       n.y = parent.y + Math.sin(ang) * r;
     }
   });
 
-  // 4. 绘制连线（平滑三次贝塞尔，带渐变效果）
+  // 4. 绘制连线（平滑曲线）
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  nodes.forEach(function(n) {
+  nodes.forEach(n => {
     if (n.id === 'root') return;
-    var parent = nodes.find(function(p) { return p.id === n.parentId; });
-    if (parent && parent.x !== undefined && parent.y !== undefined) {
-      // 计算控制点：使用二次贝塞尔，使曲线平滑向外弯曲
-      var dx = n.x - parent.x, dy = n.y - parent.y;
-      var dist = Math.sqrt(dx*dx + dy*dy);
-      var offset = Math.min(dist * 0.35, 60);
-      var midX = (parent.x + n.x) / 2 + dy * 0.2;
-      var midY = (parent.y + n.y) / 2 - dx * 0.2;
+    const parent = nodes.find(p => p.id === n.parentId);
+    if (parent && parent.x !== undefined) {
+      const midX = (parent.x + n.x) / 2 + (n.y - parent.y) * 0.2;
+      const midY = (parent.y + n.y) / 2 - (n.x - parent.x) * 0.2;
       ctx.beginPath();
       ctx.moveTo(parent.x, parent.y);
       ctx.quadraticCurveTo(midX, midY, n.x, n.y);
@@ -313,23 +306,23 @@ function drawRadial() {
     }
   });
 
-  // 5. 绘制节点（精致圆角矩形，带细腻阴影）
-  nodes.forEach(function(n) {
-    var x = n.x, y = n.y;
+  // 5. 绘制节点（XMind风格）
+  nodes.forEach(n => {
+    const x = n.x, y = n.y;
     if (x === undefined || y === undefined) return;
-    var isRoot = (n.id === 'root');
-    var w = isRoot ? 120 : 80;
-    var h = isRoot ? 44 : 36;
-    var radius = isRoot ? 22 : 18;
-    var color = n.color || (isRoot ? '#1f2937' : '#3b82f6');
+    const isRoot = n.id === 'root';
+    const w = isRoot ? 120 : 80;
+    const h = isRoot ? 44 : 36;
+    const radius = isRoot ? 22 : 18;
+    const color = n.color || (isRoot ? '#1f2937' : '#3b82f6');
 
-    // 阴影（更细腻）
+    // 阴影
     ctx.shadowColor = 'rgba(0,0,0,0.06)';
     ctx.shadowBlur = 16;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 4;
 
-    // 绘制圆角矩形
+    // 圆角矩形
     ctx.beginPath();
     ctx.moveTo(x - w/2 + radius, y - h/2);
     ctx.lineTo(x + w/2 - radius, y - h/2);
@@ -342,20 +335,18 @@ function drawRadial() {
     ctx.quadraticCurveTo(x - w/2, y - h/2, x - w/2 + radius, y - h/2);
     ctx.closePath();
 
-    // 填充渐变（增加质感）
-    var grad = ctx.createLinearGradient(x - w/2, y - h/2, x + w/2, y + h/2);
+    // 渐变填充
+    const grad = ctx.createLinearGradient(x - w/2, y - h/2, x + w/2, y + h/2);
     grad.addColorStop(0, color);
     grad.addColorStop(1, darkenColor(color, 0.1));
     ctx.fillStyle = grad;
     ctx.fill();
     ctx.shadowColor = 'transparent';
-
-    // 边框（微光）
     ctx.strokeStyle = 'rgba(255,255,255,0.15)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // 选中状态：加粗亮色边框
+    // 选中边框
     if (n.id === selectedId) {
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 3.5;
@@ -376,20 +367,18 @@ function drawRadial() {
       ctx.shadowColor = 'transparent';
     }
 
-    // 文字（清晰、抗锯齿）
+    // 文字（清晰）
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = isRoot ? 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.font = isRoot ? 'bold 16px -apple-system, "Segoe UI", Roboto, sans-serif' : '600 14px -apple-system, "Segoe UI", Roboto, sans-serif';
     ctx.textRendering = 'optimizeLegibility';
-    // 文字阴影增强可读性
     if (!isRoot) {
       ctx.shadowColor = 'rgba(0,0,0,0.1)';
       ctx.shadowBlur = 4;
     }
-    var displayText = n.text;
-    // 按宽度截断
-    var maxWidth = isRoot ? 100 : 70;
+    let displayText = n.text;
+    const maxWidth = isRoot ? 100 : 70;
     if (ctx.measureText(displayText).width > maxWidth) {
       while (ctx.measureText(displayText + '…').width > maxWidth && displayText.length > 1) {
         displayText = displayText.slice(0, -1);
@@ -400,18 +389,15 @@ function drawRadial() {
     ctx.shadowColor = 'transparent';
   });
 
-  // 更新节点计数
   document.getElementById('node-count').textContent = nodes.length + ' 节点';
-  // 保存节点数据供点击检测
   canvas._clickNodes = nodes;
 }
 
-// 辅助函数：颜色加深
 function darkenColor(hex, amount) {
-  var c = hex.replace('#', '');
-  var r = parseInt(c.substring(0,2),16);
-  var g = parseInt(c.substring(2,4),16);
-  var b = parseInt(c.substring(4,6),16);
+  let c = hex.replace('#', '');
+  let r = parseInt(c.substring(0,2),16);
+  let g = parseInt(c.substring(2,4),16);
+  let b = parseInt(c.substring(4,6),16);
   r = Math.max(0, r - r * amount);
   g = Math.max(0, g - g * amount);
   b = Math.max(0, b - b * amount);
@@ -419,29 +405,24 @@ function darkenColor(hex, amount) {
 }
 
 // ============================================================
-// 交互：点击选中
+// 交互事件（点击、双击）
 // ============================================================
 canvas.addEventListener('click', function(e) {
-  var rect = canvas.getBoundingClientRect();
-  var logicalWidth = canvas._logicalWidth || rect.width;
-  var logicalHeight = canvas._logicalHeight || rect.height;
-  var scaleX = logicalWidth / rect.width;
-  var scaleY = logicalHeight / rect.height;
-  // 计算鼠标在逻辑坐标中的位置（考虑transform）
-  var mx = (e.clientX - rect.left) * scaleX;
-  var my = (e.clientY - rect.top) * scaleY;
-  // 考虑view平移和缩放
-  var cx = (mx - view.panX * scaleX) / view.scale;
-  var cy = (my - view.panY * scaleY) / view.scale;
+  const rect = canvas.getBoundingClientRect();
+  const W = canvas._logicalWidth || rect.width;
+  const H = canvas._logicalHeight || rect.height;
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  let mx = (e.clientX - rect.left) * scaleX;
+  let my = (e.clientY - rect.top) * scaleY;
+  mx = (mx - view.panX * scaleX) / view.scale;
+  my = (my - view.panY * scaleY) / view.scale;
 
-  var nodes = canvas._clickNodes || [];
-  for (var i = 0; i < nodes.length; i++) {
-    var n = nodes[i];
-    if (n.x === undefined || n.y === undefined) continue;
-    var dx = cx - n.x, dy = cy - n.y;
-    var dist = Math.sqrt(dx*dx + dy*dy);
-    var threshold = (n.id === 'root') ? 30 : 24;
-    if (dist < threshold) {
+  const nodes = canvas._clickNodes || [];
+  for (let n of nodes) {
+    if (n.x === undefined) continue;
+    const dx = mx - n.x, dy = my - n.y;
+    if (Math.sqrt(dx*dx + dy*dy) < (n.id === 'root' ? 30 : 24)) {
       selectedId = n.id;
       drawRadial();
       return;
@@ -449,38 +430,33 @@ canvas.addEventListener('click', function(e) {
   }
 });
 
-// 双击编辑
 canvas.addEventListener('dblclick', function(e) {
-  var rect = canvas.getBoundingClientRect();
-  var logicalWidth = canvas._logicalWidth || rect.width;
-  var logicalHeight = canvas._logicalHeight || rect.height;
-  var scaleX = logicalWidth / rect.width;
-  var scaleY = logicalHeight / rect.height;
-  var mx = (e.clientX - rect.left) * scaleX;
-  var my = (e.clientY - rect.top) * scaleY;
-  var cx = (mx - view.panX * scaleX) / view.scale;
-  var cy = (my - view.panY * scaleY) / view.scale;
-  var nodes = canvas._clickNodes || [];
-  for (var i = 0; i < nodes.length; i++) {
-    var n = nodes[i];
-    if (n.x === undefined || n.y === undefined) continue;
-    var dx = cx - n.x, dy = cy - n.y;
+  const rect = canvas.getBoundingClientRect();
+  const W = canvas._logicalWidth || rect.width;
+  const H = canvas._logicalHeight || rect.height;
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  let mx = (e.clientX - rect.left) * scaleX;
+  let my = (e.clientY - rect.top) * scaleY;
+  mx = (mx - view.panX * scaleX) / view.scale;
+  my = (my - view.panY * scaleY) / view.scale;
+  const nodes = canvas._clickNodes || [];
+  for (let n of nodes) {
+    if (n.x === undefined) continue;
+    const dx = mx - n.x, dy = my - n.y;
     if (Math.sqrt(dx*dx + dy*dy) < 30) {
-      editNodeById(n.id);
+      const node = findNode(treeData, n.id);
+      if (node) {
+        const newText = prompt('修改文字:', node.text);
+        if (newText !== null && newText.trim() !== '') {
+          node.text = newText.trim();
+          drawRadial();
+        }
+      }
       return;
     }
   }
 });
-
-function editNodeById(id) {
-  var node = findNode(treeData, id);
-  if (!node) return;
-  var newText = prompt('修改文字:', node.text);
-  if (newText !== null && newText.trim() !== '') {
-    node.text = newText.trim();
-    drawRadial();
-  }
-}
 
 // ============================================================
 // 数据操作
@@ -488,20 +464,19 @@ function editNodeById(id) {
 function findNode(node, id) {
   if (node.id === id) return node;
   if (node.children) {
-    for (var i = 0; i < node.children.length; i++) {
-      var found = findNode(node.children[i], id);
+    for (let c of node.children) {
+      const found = findNode(c, id);
       if (found) return found;
     }
   }
   return null;
 }
 
-function findParent(node, targetId, parent) {
-  parent = parent || null;
+function findParent(node, targetId, parent = null) {
   if (node.id === targetId) return parent;
   if (node.children) {
-    for (var i = 0; i < node.children.length; i++) {
-      var found = findParent(node.children[i], targetId, node);
+    for (let c of node.children) {
+      const found = findParent(c, targetId, node);
       if (found !== undefined) return found;
     }
   }
@@ -509,23 +484,19 @@ function findParent(node, targetId, parent) {
 }
 
 function countNodes(node) {
-  var c = 1;
+  let c = 1;
   if (node.children) {
-    for (var i = 0; i < node.children.length; i++) {
-      c += countNodes(node.children[i]);
-    }
+    for (let ch of node.children) c += countNodes(ch);
   }
   return c;
 }
 
-// ---- 添加子节点 ----
 function addChild() {
-  var parent = findNode(treeData, selectedId);
+  const parent = findNode(treeData, selectedId);
   if (!parent) { alert('请先点击选中一个节点'); return; }
   if (!parent.children) parent.children = [];
-  // 自动生成颜色
-  var colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
-  var newColor = colors[parent.children.length % colors.length];
+  const colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
+  const newColor = colors[parent.children.length % colors.length];
   parent.children.push({
     id: 'id-' + (idCounter++),
     text: '新分支',
@@ -536,18 +507,14 @@ function addChild() {
   drawRadial();
 }
 
-// ---- 添加兄弟节点 ----
 function addSibling() {
   if (selectedId === 'root') { alert('根节点不能添加兄弟'); return; }
-  var parent = findParent(treeData, selectedId);
+  const parent = findParent(treeData, selectedId);
   if (!parent) return;
-  var idx = -1;
-  for (var i = 0; i < parent.children.length; i++) {
-    if (parent.children[i].id === selectedId) { idx = i; break; }
-  }
+  let idx = parent.children.findIndex(c => c.id === selectedId);
   if (idx === -1) return;
-  var colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
-  var newColor = colors[parent.children.length % colors.length];
+  const colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
+  const newColor = colors[parent.children.length % colors.length];
   parent.children.splice(idx + 1, 0, {
     id: 'id-' + (idCounter++),
     text: '同级分支',
@@ -558,48 +525,30 @@ function addSibling() {
   drawRadial();
 }
 
-// ---- 编辑 ----
 function editNode() {
-  if (selectedId === 'root') {
-    var root = findNode(treeData, 'root');
-    if (root) {
-      var newText = prompt('修改中心主题:', root.text);
-      if (newText !== null && newText.trim() !== '') {
-        root.text = newText.trim();
-        drawRadial();
-      }
-    }
-    return;
-  }
-  var node = findNode(treeData, selectedId);
+  const node = findNode(treeData, selectedId);
   if (!node) { alert('请先选中一个节点'); return; }
-  var newText = prompt('修改文字:', node.text);
+  const newText = prompt('修改文字:', node.text);
   if (newText !== null && newText.trim() !== '') {
     node.text = newText.trim();
     drawRadial();
   }
 }
 
-// ---- 删除 ----
 function deleteNode() {
   if (selectedId === 'root') { alert('根节点不能删除'); return; }
   if (!confirm('删除该节点及其所有子节点？')) return;
-  var parent = findParent(treeData, selectedId);
+  const parent = findParent(treeData, selectedId);
   if (!parent) return;
-  parent.children = parent.children.filter(function(c) { return c.id !== selectedId; });
+  parent.children = parent.children.filter(c => c.id !== selectedId);
   selectedId = parent.id;
   drawRadial();
 }
 
-// ---- 展开/收起 ----
 function toggleAll(expand) {
   function walk(node) {
     node.collapsed = !expand;
-    if (node.children) {
-      for (var i = 0; i < node.children.length; i++) {
-        walk(node.children[i]);
-      }
-    }
+    if (node.children) node.children.forEach(walk);
   }
   walk(treeData);
   drawRadial();
@@ -613,28 +562,25 @@ function closeImportModal() {
   document.getElementById('importModal').classList.remove('active');
 }
 function importFromText() {
-  var text = document.getElementById('importText').value;
+  const text = document.getElementById('importText').value;
   if (!text.trim()) { alert('请输入内容'); return; }
-  var lines = text.split('\n').filter(function(l) { return l.trim(); });
-  var root = { id: 'root', text: '📖 书摘', collapsed: false, color: '#1f2937', children: [] };
-  var stack = [{ node: root, level: 0 }];
-  var colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
-  for (var i = 0; i < lines.length; i++) {
-    var line = lines[i];
-    var indent = line.match(/^[\s\t]*/)[0].length;
-    var level = Math.floor(indent / 2);
-    var content = line.trim();
-    var newNode = {
+  const lines = text.split('\n').filter(l => l.trim());
+  const root = { id: 'root', text: '📖 书摘', collapsed: false, color: '#1f2937', children: [] };
+  const stack = [{ node: root, level: 0 }];
+  const colors = ['#3b82f6','#f59e0b','#8b5cf6','#10b981','#ef4444','#06b6d4','#f97316','#ec4899'];
+  for (let line of lines) {
+    const indent = line.match(/^[\s\t]*/)[0].length;
+    const level = Math.floor(indent / 2);
+    const content = line.trim();
+    const newNode = {
       id: 'id-' + (idCounter++),
       text: content,
       collapsed: false,
-      color: colors[ (level) % colors.length ],
+      color: colors[level % colors.length],
       children: []
     };
-    while (stack.length > 1 && stack[stack.length - 1].level >= level) {
-      stack.pop();
-    }
-    var parent = stack[stack.length - 1].node;
+    while (stack.length > 1 && stack[stack.length-1].level >= level) stack.pop();
+    const parent = stack[stack.length-1].node;
     if (!parent.children) parent.children = [];
     parent.children.push(newNode);
     stack.push({ node: newNode, level: level });
@@ -650,16 +596,13 @@ function exportImage() {
 }
 
 // ============================================================
-// 窗口resize
+// 窗口变化 & 启动
 // ============================================================
 window.addEventListener('resize', function() {
   resizeCanvas();
   drawRadial();
 });
 
-// ============================================================
-// 启动
-// ============================================================
 resizeCanvas();
 drawRadial();
 </script>
