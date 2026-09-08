@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>放射状思维导图 · 最终防重叠版</title>
+    <title>放射状思维导图 · 最终版</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
         html,body{width:100%;height:100%;overflow:hidden;background:#f7f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;position:fixed;touch-action:none}
@@ -50,7 +50,7 @@
 </head>
 <body>
     <div id="canvas-container"><svg id="svg-layer"></svg><div id="nodes-layer"></div></div>
-    <div id="hint-text">点击节点选中 · 拖动空白平移</div>
+    <div id="hint-text">点击节点选中 · 拖动空白平移 · 双指缩放</div>
     <div id="zoom-indicator">100%</div>
     <div id="mode-indicator">编辑模式</div>
     <div id="save-hint">已保存</div>
@@ -64,6 +64,8 @@
         <button class="toolbar-btn" data-action="add-sibling" id="btn-add-sibling">🔗 兄弟</button>
         <button class="toolbar-btn" data-action="edit" id="btn-edit">✏️ 编辑</button>
         <button class="toolbar-btn" data-action="delete" id="btn-delete">🗑️ 删除</button>
+        <button class="toolbar-btn" data-action="focus" id="btn-focus" style="display:none;">🔍 聚焦</button>
+        <button class="toolbar-btn" data-action="unfocus" id="btn-unfocus" style="display:none;">↩️ 返回</button>
         <button class="toolbar-btn primary" data-action="export-png" id="btn-export">📤 导出</button>
         <button class="toolbar-btn" data-action="reset-view">重置</button>
     </div>
@@ -94,391 +96,455 @@
         </div>
     </div>
 
-    <script>        (function(){
-            let docs = [];
-            let currentDocId = null;
-            let selectedId = null;
-            let editMode = true;
+    <script>(function(){
+    let docs = [];
+    let currentDocId = null;
+    let selectedId = null;
+    let editMode = true;
+    let focusStack = [];
+    let currentFocusNodeId = null;
 
-            const STORAGE_KEY = 'mindmap_docs_v2';
+    const STORAGE_KEY = 'mindmap_docs_v2';
 
-            function saveAll() {
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                        docs: docs.map(d => ({id: d.id, name: d.name, root: serializeNode(d.root)})),
-                        currentDocId: currentDocId
+    function saveAll() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                docs: docs.map(d => ({id: d.id, name: d.name, root: serializeNode(d.root)})),
+                currentDocId: currentDocId
+            }));
+            showSaveHint();
+        } catch(e) { console.warn('保存失败', e); }
+    }
+
+    function loadAll() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.docs && data.docs.length > 0) {
+                    docs = data.docs.map(d => ({
+                        id: d.id,
+                        name: d.name,
+                        root: deserializeNode(d.root)
                     }));
-                    showSaveHint();
-                } catch(e) { console.warn('保存失败', e); }
-            }
-
-            function loadAll() {
-                try {
-                    const saved = localStorage.getItem(STORAGE_KEY);
-                    if (saved) {
-                        const data = JSON.parse(saved);
-                        if (data.docs && data.docs.length > 0) {
-                            docs = data.docs.map(d => ({
-                                id: d.id,
-                                name: d.name,
-                                root: deserializeNode(d.root)
-                            }));
-                            currentDocId = data.currentDocId || docs[0].id;
-                            return true;
-                        }
-                    }
-                } catch(e) { console.warn('读取失败', e); }
-                return false;
-            }
-
-            function serializeNode(node) {
-                return {
-                    id: node.id,
-                    text: node.text,
-                    collapsed: node.collapsed || false,
-                    link: node.link || '',
-                    children: node.children.map(ch => serializeNode(ch))
-                };
-            }
-
-            function deserializeNode(data, parentId = null) {
-                const node = createNode(data.text, parentId);
-                node.id = data.id;
-                node.collapsed = data.collapsed || false;
-                node.link = data.link || '';
-                node.children = data.children.map(ch => deserializeNode(ch, node.id));
-                return node;
-            }
-
-            function showSaveHint() {
-                const hint = document.getElementById('save-hint');
-                hint.style.display = 'block';
-                setTimeout(() => { hint.style.display = 'none'; }, 1500);
-            }
-
-            function createNode(text, parentId = null) {
-                return {
-                    id: 'n' + (Date.now() + Math.random()).toString(36).substr(2, 9),
-                    text,
-                    parentId,
-                    children: [],
-                    depth: 0,
-                    angle: 0,
-                    sectorStart: 0,
-                    sectorEnd: 360,
-                    x: 0,
-                    y: 0,
-                    collapsed: false,
-                    link: ''
-                };
-            }
-
-            function getCurrentDoc() { return docs.find(d => d.id === currentDocId) || null; }
-            function getRootNode() { const doc = getCurrentDoc(); return doc ? doc.root : null; }
-
-            function buildNodeMap() {
-                const root = getRootNode();
-                if (!root) return;
-                nodeMap.clear();
-                (function traverse(node, parent) {
-                    node.depth = parent ? parent.depth + 1 : 0;
-                    node.parentId = parent ? parent.id : null;
-                    nodeMap.set(node.id, node);
-                    node.children.forEach(ch => traverse(ch, node));
-                })(root, null);
-            }
-
-            let nodeMap = new Map();
-            function getNode(id) { return nodeMap.get(id) || null; }
-            function getVisibleNodes() {
-                const root = getRootNode();
-                if (!root) return [];
-                let res = [];
-                (function traverse(node) {
-                    res.push(node);
-                    if (!node.collapsed) node.children.forEach(ch => traverse(ch));
-                })(root);
-                return res;
-            }
-
-            // 动态计算节点距离：根据文字长度估算节点宽度，结合扇区角度确保不重叠
-            function getRequiredDistance(children, sectorStart, sectorEnd, depth) {
-                if (!children.length) return getBaseDistance(depth);
-                const fontSize = depth === 0 ? 16 : 14;
-                // 每个字符约占0.6倍fontSize像素宽度
-                const widths = children.map(c => Math.max(c.text.length * fontSize * 0.6 + 30, 60));
-                const totalAngle = (sectorEnd - sectorStart) * Math.PI / 180;
-                // 计算每个子节点需要的最小弧长，取最大值
-                let minDistance = 0;
-                for (let w of widths) {
-                    // 弧长 = 半径 * 角度，需满足 弧长 >= 节点宽度 + 间距
-                    // 半径 >= (节点宽度 + 间距) / 角度
-                    const anglePerChild = totalAngle / children.length;
-                    const requiredRadius = (w + 20) / Math.max(anglePerChild, 0.1);
-                    minDistance = Math.max(minDistance, requiredRadius);
+                    currentDocId = data.currentDocId || docs[0].id;
+                    return true;
                 }
-                // 加上基础距离限制
-                const baseDist = getBaseDistance(depth);
-                return Math.max(baseDist, minDistance);
             }
+        } catch(e) { console.warn('读取失败', e); }
+        return false;
+    }
 
-            function getBaseDistance(d) {
-                if (d === 0) return 0;
-                if (d === 1) return 190;
-                if (d === 2) return 170;
-                return 150;
-            }
+    function serializeNode(node) {
+        return {
+            id: node.id,
+            text: node.text,
+            collapsed: node.collapsed || false,
+            link: node.link || '',
+            children: node.children.map(ch => serializeNode(ch))
+        };
+    }
 
-            function calculateLayout() {
-                const root = getRootNode();
-                if (!root) return;
+    function deserializeNode(data, parentId = null) {
+        const node = createNode(data.text, parentId);
+        node.id = data.id;
+        node.collapsed = data.collapsed || false;
+        node.link = data.link || '';
+        node.children = data.children.map(ch => deserializeNode(ch, node.id));
+        return node;
+    }
 
-                function assignSectors(node, start, end) {
-                    node.sectorStart = start;
-                    node.sectorEnd = end;
-                    const children = node.children;
-                    if (!children.length) return;
-                    const per = (end - start) / children.length;
-                    children.forEach((child, i) => {
-                        let s = start + i * per;
-                        let e = s + per;
-                        child.angle = s + per / 2;
-                        assignSectors(child, s, e);
-                    });
-                }
-                assignSectors(root, 0, 360);
+    function showSaveHint() {
+        const hint = document.getElementById('save-hint');
+        hint.style.display = 'block';
+        setTimeout(() => { hint.style.display = 'none'; }, 1500);
+    }
 
-                (function computePositions(node, px, py) {
-                    if (node.depth === 0) {
-                        node.x = 0;
-                        node.y = 0;
-                    } else {
-                        const parent = getNode(node.parentId);
-                        if (parent) {
-                            // 动态计算父节点到子节点的距离
-                            const dist = getRequiredDistance(parent.children, parent.sectorStart, parent.sectorEnd, node.depth);
-                            let rad = (node.angle - 90) * Math.PI / 180;
-                            node.x = px + Math.cos(rad) * dist;
-                            node.y = py + Math.sin(rad) * dist;
-                        }
-                    }
-                    if (!node.collapsed) node.children.forEach(ch => computePositions(ch, node.x, node.y));
-                })(root, 0, 0);
-            }
+    function createNode(text, parentId = null) {
+        return {
+            id: 'n' + (Date.now() + Math.random()).toString(36).substr(2, 9),
+            text,
+            parentId,
+            children: [],
+            depth: 0,
+            angle: 0,
+            sectorStart: 0,
+            sectorEnd: 360,
+            x: 0,
+            y: 0,
+            collapsed: false,
+            link: ''
+        };
+    }
 
-            const container = document.getElementById('canvas-container');
-            const svgLayer = document.getElementById('svg-layer');
-            const nodesLayer = document.getElementById('nodes-layer');
-            const zoomIndicator = document.getElementById('zoom-indicator');
-            const hintText = document.getElementById('hint-text');
-            const modeIndicator = document.getElementById('mode-indicator');
-            let view = { scale: 1, panX: window.innerWidth / 2, panY: window.innerHeight / 2 };
+    function getCurrentDoc() { return docs.find(d => d.id === currentDocId) || null; }
 
-            function canvasToScreen(cx, cy) { return { x: cx * view.scale + view.panX, y: cy * view.scale + view.panY }; }
+    function getRootNode() {
+        if (currentFocusNodeId) {
+            return getNode(currentFocusNodeId) || null;
+        }
+        const doc = getCurrentDoc();
+        return doc ? doc.root : null;
+    }
 
-            function render() {
-                calculateLayout();
-                renderSVG();
-                renderNodes();
-                zoomIndicator.textContent = Math.round(view.scale * 100) + '%';
-                updateButtons();
-            }
+    function buildNodeMap() {
+        const root = getRootNode();
+        if (!root) return;
+        nodeMap.clear();
+        (function traverse(node, parent) {
+            node.depth = parent ? parent.depth + 1 : 0;
+            node.parentId = parent ? parent.id : null;
+            nodeMap.set(node.id, node);
+            node.children.forEach(ch => traverse(ch, node));
+        })(root, null);
+    }
 
-            function renderSVG() {
-                let w = window.innerWidth, h = window.innerHeight;
-                svgLayer.setAttribute('width', w);
-                svgLayer.setAttribute('height', h);
-                svgLayer.setAttribute('viewBox', `0 0 ${w} ${h}`);
-                let content = '';
-                getVisibleNodes().forEach(node => {
-                    if (node.depth === 0 || !node.parentId) return;
-                    let parent = getNode(node.parentId);
-                    if (!parent) return;
-                    let from = canvasToScreen(parent.x, parent.y);
-                    let to = canvasToScreen(node.x, node.y);
-                    let mx = (from.x + to.x) / 2;
-                    let my = (from.y + to.y) / 2;
-                    content += `<path d="M ${from.x} ${from.y} C ${from.x + (mx - from.x) * 0.5} ${from.y}, ${to.x + (mx - to.x) * 0.5} ${to.y}, ${to.x} ${to.y}" stroke="#b8c9dd" stroke-width="${1.5 * view.scale}" fill="none"/>`;
-                });
-                svgLayer.innerHTML = content;
-            }
+    let nodeMap = new Map();
+    function getNode(id) { return nodeMap.get(id) || null; }
+    function getVisibleNodes() {
+        const root = getRootNode();
+        if (!root) return [];
+        let res = [];
+        (function traverse(node) {
+            res.push(node);
+            if (!node.collapsed) node.children.forEach(ch => traverse(ch));
+        })(root);
+        return res;
+    }
 
-            function renderNodes() {
-                nodesLayer.innerHTML = '';
-                let visible = getVisibleNodes();
-                if (!visible.length) return;
-                const s = view.scale;
-                visible.forEach(node => {
-                    let wrapper = document.createElement('div');
-                    wrapper.className = 'node-wrapper';
-                    wrapper.dataset.nodeId = node.id;
-                    let screen = canvasToScreen(node.x, node.y);
-                    wrapper.style.left = screen.x + 'px';
-                    wrapper.style.top = screen.y + 'px';
+    function getRequiredDistance(children, sectorStart, sectorEnd, depth) {
+        if (!children.length) return getBaseDistance(depth);
+        const fontSize = depth === 0 ? 16 : 14;
+        const widths = children.map(c => Math.max(c.text.length * fontSize * 0.6 + 30, 60));
+        const totalAngle = (sectorEnd - sectorStart) * Math.PI / 180;
+        let minDistance = 0;
+        for (let w of widths) {
+            const anglePerChild = totalAngle / children.length;
+            const requiredRadius = (w + 20) / Math.max(anglePerChild, 0.1);
+            minDistance = Math.max(minDistance, requiredRadius);
+        }
+        const baseDist = getBaseDistance(depth);
+        return Math.max(baseDist, minDistance);
+    }
 
-                    let box = document.createElement('div');
-                    box.className = 'node-box';
-                    if (node.depth === 0) box.classList.add('root-node');
-                    else if (node.depth === 1) box.classList.add('level-1');
-                    else if (node.depth === 2) box.classList.add('level-2');
-                    if (node.id === selectedId) box.classList.add('selected');
-                    if (node.link) box.classList.add('has-link');
+    function getBaseDistance(d) {
+        if (d === 0) return 0;
+        if (d === 1) return 190;
+        if (d === 2) return 170;
+        return 150;
+    }
 
-                    const baseFontSize = node.depth === 0 ? 16 : 14;
-                    const fontSize = baseFontSize * s;
-                    box.style.fontSize = fontSize + 'px';
-                    box.style.padding = `${8 * s}px ${16 * s}px`;
-                    box.style.borderRadius = `${10 * s}px`;
-                    box.style.width = (Math.max(node.text.length * fontSize * 0.6 + 32 * s, 80 * s)) + 'px';
-                    box.style.minHeight = (36 * s) + 'px';
-                    box.style.display = 'flex';
-                    box.style.alignItems = 'center';
-                    box.style.justifyContent = 'center';
-                    box.textContent = node.text;
-                    box.dataset.nodeId = node.id;
+    function calculateLayout() {
+        const root = getRootNode();
+        if (!root) return;
 
-                    box.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (editMode) {
-                            selectNode(node.id);
-                        } else if (node.link) {
-                            window.open(node.link, '_blank');
-                        }
-                    });
-
-                    wrapper.appendChild(box);
-
-                    if (editMode) {
-                        let dot = document.createElement('div');
-                        dot.className = 'node-dot';
-                        if (node.id === selectedId) dot.classList.add('active');
-                        dot.dataset.nodeId = node.id;
-                        let side = getDotSide(node);
-                        let offset = 16 * s;
-                        if (side === 'right') { dot.style.right = (-offset) + 'px'; dot.style.top = '50%'; dot.style.transform = 'translateY(-50%)'; }
-                        else if (side === 'left') { dot.style.left = (-offset) + 'px'; dot.style.top = '50%'; dot.style.transform = 'translateY(-50%)'; }
-                        else if (side === 'top') { dot.style.top = (-offset) + 'px'; dot.style.left = '50%'; dot.style.transform = 'translateX(-50%)'; }
-                        else { dot.style.bottom = (-offset) + 'px'; dot.style.left = '50%'; dot.style.transform = 'translateX(-50%)'; }
-                        dot.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            selectNode(node.id);
-                        });
-                        wrapper.appendChild(dot);
-                    }
-
-                    nodesLayer.appendChild(wrapper);
-                });
-                hintText.classList.toggle('hidden', visible.length > 1);
-            }
-
-            function getDotSide(node) {
-                if (node.depth === 0) return 'bottom';
-                let parent = getNode(node.parentId);
-                if (!parent) return 'right';
-                let dx = node.x - parent.x, dy = node.y - parent.y;
-                let angle = Math.atan2(dy, dx) * 180 / Math.PI;
-                if (angle > -45 && angle <= 45) return 'right';
-                if (angle > 45 && angle <= 135) return 'bottom';
-                if (angle > 135 || angle <= -135) return 'left';
-                return 'top';
-            }
-
-            function updateButtons() {
-                const hasSelection = !!selectedId;
-                const editButtons = ['add-child', 'add-sibling', 'edit', 'delete'];
-                document.querySelectorAll('.toolbar-btn').forEach(btn => {
-                    const action = btn.dataset.action;
-                    if (editButtons.includes(action)) {
-                        btn.style.display = editMode ? 'flex' : 'none';
-                        if (editMode) btn.style.opacity = hasSelection ? '1' : '0.4';
-                    }
-                    if (action === 'open-link') {
-                        btn.style.display = editMode ? 'none' : 'flex';
-                    }
-                });
-                const modeBtn = document.getElementById('mode-btn');
-                if (modeBtn) {
-                    modeBtn.textContent = editMode ? '📝 编辑' : '📖 复习';
-                    modeBtn.classList.toggle('active-mode', editMode);
-                }
-                modeIndicator.textContent = editMode ? '编辑模式' : '复习模式';
-            }
-
-            function selectNode(id) {
-                selectedId = id;
-                render();
-            }
-
-            function toggleMode() {
-                editMode = !editMode;
-                if (!editMode) selectedId = null;
-                render();
-                saveAll();
-            }
-
-            let activePointerId = null, startX, startY, startPanX, startPanY, isDragging = false, moved = false;
-            container.addEventListener('pointerdown', (e) => {
-                if (e.target.closest('.node-dot')) return;
-                activePointerId = e.pointerId;
-                startX = e.clientX; startY = e.clientY;
-                startPanX = view.panX; startPanY = view.panY;
-                isDragging = false; moved = false;
-                container.setPointerCapture(e.pointerId);
+        function assignSectors(node, start, end) {
+            node.sectorStart = start;
+            node.sectorEnd = end;
+            const children = node.children;
+            if (!children.length) return;
+            const per = (end - start) / children.length;
+            children.forEach((child, i) => {
+                let s = start + i * per;
+                let e = s + per;
+                child.angle = s + per / 2;
+                assignSectors(child, s, e);
             });
-            container.addEventListener('pointermove', (e) => {
-                if (e.pointerId !== activePointerId) return;
-                let dx = e.clientX - startX, dy = e.clientY - startY;
-                if (Math.sqrt(dx * dx + dy * dy) > 5) { isDragging = true; moved = true; }
-                if (isDragging) {
-                    view.panX = startPanX + dx;
-                    view.panY = startPanY + dy;
-                    render();
+        }
+        assignSectors(root, 0, 360);
+
+        (function computePositions(node, px, py) {
+            if (node.depth === 0) {
+                node.x = 0;
+                node.y = 0;
+            } else {
+                const parent = getNode(node.parentId);
+                if (parent) {
+                    const dist = getRequiredDistance(parent.children, parent.sectorStart, parent.sectorEnd, node.depth);
+                    let rad = (node.angle - 90) * Math.PI / 180;
+                    node.x = px + Math.cos(rad) * dist;
+                    node.y = py + Math.sin(rad) * dist;
+                }
+            }
+            if (!node.collapsed) node.children.forEach(ch => computePositions(ch, node.x, node.y));
+        })(root, 0, 0);
+    }
+
+    const container = document.getElementById('canvas-container');
+    const svgLayer = document.getElementById('svg-layer');
+    const nodesLayer = document.getElementById('nodes-layer');
+    const zoomIndicator = document.getElementById('zoom-indicator');
+    const hintText = document.getElementById('hint-text');
+    const modeIndicator = document.getElementById('mode-indicator');
+    let view = { scale: 1, panX: window.innerWidth / 2, panY: window.innerHeight / 2 };
+
+    function canvasToScreen(cx, cy) { return { x: cx * view.scale + view.panX, y: cy * view.scale + view.panY }; }
+
+    function render() {
+        calculateLayout();
+        renderSVG();
+        renderNodes();
+        zoomIndicator.textContent = Math.round(view.scale * 100) + '%';
+        updateButtons();
+    }
+
+    function renderSVG() {
+        let w = window.innerWidth, h = window.innerHeight;
+        svgLayer.setAttribute('width', w);
+        svgLayer.setAttribute('height', h);
+        svgLayer.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        let content = '';
+        getVisibleNodes().forEach(node => {
+            if (node.depth === 0 || !node.parentId) return;
+            let parent = getNode(node.parentId);
+            if (!parent) return;
+            let from = canvasToScreen(parent.x, parent.y);
+            let to = canvasToScreen(node.x, node.y);
+            let mx = (from.x + to.x) / 2;
+            let my = (from.y + to.y) / 2;
+            content += `<path d="M ${from.x} ${from.y} C ${from.x + (mx - from.x) * 0.5} ${from.y}, ${to.x + (mx - to.x) * 0.5} ${to.y}, ${to.x} ${to.y}" stroke="#b8c9dd" stroke-width="${1.5 * view.scale}" fill="none"/>`;
+        });
+        svgLayer.innerHTML = content;
+    }
+
+    function renderNodes() {
+        nodesLayer.innerHTML = '';
+        let visible = getVisibleNodes();
+        if (!visible.length) return;
+        const s = view.scale;
+        visible.forEach(node => {
+            let wrapper = document.createElement('div');
+            wrapper.className = 'node-wrapper';
+            wrapper.dataset.nodeId = node.id;
+            let screen = canvasToScreen(node.x, node.y);
+            wrapper.style.left = screen.x + 'px';
+            wrapper.style.top = screen.y + 'px';
+
+            let box = document.createElement('div');
+            box.className = 'node-box';
+            if (node.depth === 0) box.classList.add('root-node');
+            else if (node.depth === 1) box.classList.add('level-1');
+            else if (node.depth === 2) box.classList.add('level-2');
+            if (node.id === selectedId) box.classList.add('selected');
+            if (node.link) box.classList.add('has-link');
+
+            const baseFontSize = node.depth === 0 ? 16 : 14;
+            const fontSize = baseFontSize * s;
+            box.style.fontSize = fontSize + 'px';
+            box.style.padding = `${8 * s}px ${16 * s}px`;
+            box.style.borderRadius = `${10 * s}px`;
+            box.style.width = (Math.max(node.text.length * fontSize * 0.6 + 32 * s, 80 * s)) + 'px';
+            box.style.minHeight = (36 * s) + 'px';
+            box.style.display = 'flex';
+            box.style.alignItems = 'center';
+            box.style.justifyContent = 'center';
+            box.textContent = node.text;
+            box.dataset.nodeId = node.id;
+
+            box.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (editMode) {
+                    selectNode(node.id);
+                } else if (node.link) {
+                    window.open(node.link, '_blank');
                 }
             });
-            container.addEventListener('pointerup', (e) => {
-                if (e.pointerId !== activePointerId) return;
-                let wasDragging = isDragging;
-                isDragging = false; activePointerId = null;
-                if (!wasDragging && !moved && !e.target.closest('.node-box') && !e.target.closest('.node-dot')) {
-                    if (editMode) selectNode(null);
-                }
-                moved = false;
-            });
-            container.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                let delta = e.deltaY > 0 ? -0.08 : 0.08;
-                let newScale = Math.max(0.15, Math.min(3, view.scale + delta));
-                let ratio = newScale / view.scale;
+
+            wrapper.appendChild(box);
+
+            if (editMode) {
+                let dot = document.createElement('div');
+                dot.className = 'node-dot';
+                if (node.id === selectedId) dot.classList.add('active');
+                dot.dataset.nodeId = node.id;
+                let side = getDotSide(node);
+                let offset = 16 * s;
+                if (side === 'right') { dot.style.right = (-offset) + 'px'; dot.style.top = '50%'; dot.style.transform = 'translateY(-50%)'; }
+                else if (side === 'left') { dot.style.left = (-offset) + 'px'; dot.style.top = '50%'; dot.style.transform = 'translateY(-50%)'; }
+                else if (side === 'top') { dot.style.top = (-offset) + 'px'; dot.style.left = '50%'; dot.style.transform = 'translateX(-50%)'; }
+                else { dot.style.bottom = (-offset) + 'px'; dot.style.left = '50%'; dot.style.transform = 'translateX(-50%)'; }
+                dot.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectNode(node.id);
+                });
+                wrapper.appendChild(dot);
+            }
+
+            nodesLayer.appendChild(wrapper);
+        });
+        hintText.classList.toggle('hidden', visible.length > 1);
+    }
+
+    function getDotSide(node) {
+        if (node.depth === 0) return 'bottom';
+        let parent = getNode(node.parentId);
+        if (!parent) return 'right';
+        let dx = node.x - parent.x, dy = node.y - parent.y;
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        if (angle > -45 && angle <= 45) return 'right';
+        if (angle > 45 && angle <= 135) return 'bottom';
+        if (angle > 135 || angle <= -135) return 'left';
+        return 'top';
+    }
+
+    function updateButtons() {
+        const hasSelection = !!selectedId;
+        const editButtons = ['add-child', 'add-sibling', 'edit', 'delete'];
+        document.querySelectorAll('.toolbar-btn').forEach(btn => {
+            const action = btn.dataset.action;
+            if (editButtons.includes(action)) {
+                btn.style.display = editMode ? 'flex' : 'none';
+                if (editMode) btn.style.opacity = hasSelection ? '1' : '0.4';
+            }
+            if (action === 'open-link') {
+                btn.style.display = editMode ? 'none' : 'flex';
+            }
+        });
+        const modeBtn = document.getElementById('mode-btn');
+        if (modeBtn) {
+            modeBtn.textContent = editMode ? '📝 编辑' : '📖 复习';
+            modeBtn.classList.toggle('active-mode', editMode);
+        }
+        modeIndicator.textContent = editMode ? '编辑模式' : '复习模式';
+
+        const focusBtn = document.getElementById('btn-focus');
+        const unfocusBtn = document.getElementById('btn-unfocus');
+        if (focusBtn && unfocusBtn) {
+            focusBtn.style.display = (editMode && selectedId) ? 'flex' : 'none';
+            unfocusBtn.style.display = (editMode && currentFocusNodeId) ? 'flex' : 'none';
+        }
+    }
+
+    function selectNode(id) {
+        selectedId = id;
+        render();
+        updateButtons();
+    }
+
+    function toggleMode() {
+        editMode = !editMode;
+        if (!editMode) selectedId = null;
+        render();
+        saveAll();
+    }
+
+    function focusNode(nodeId) {
+        const node = getNode(nodeId);
+        if (!node) return;
+        focusStack.push(currentFocusNodeId || 'root');
+        currentFocusNodeId = nodeId;
+        selectedId = null;
+        buildNodeMap();
+        resetView();
+        render();
+        updateButtons();
+        saveAll();
+    }
+
+    function unfocusNode() {
+        if (focusStack.length > 0) {
+            currentFocusNodeId = focusStack.pop();
+        } else {
+            currentFocusNodeId = null;
+        }
+        if (currentFocusNodeId === 'root') currentFocusNodeId = null;
+        selectedId = null;
+        buildNodeMap();
+        resetView();
+        render();
+        updateButtons();
+    }
+
+    let activePointerId = null, startX, startY, startPanX, startPanY, isDragging = false, moved = false;
+    container.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.node-dot')) return;
+        activePointerId = e.pointerId;
+        startX = e.clientX; startY = e.clientY;
+        startPanX = view.panX; startPanY = view.panY;
+        isDragging = false; moved = false;
+        container.setPointerCapture(e.pointerId);
+    });
+    container.addEventListener('pointermove', (e) => {
+        if (e.pointerId !== activePointerId) return;
+        let dx = e.clientX - startX, dy = e.clientY - startY;
+        if (Math.sqrt(dx * dx + dy * dy) > 5) { isDragging = true; moved = true; }
+        if (isDragging) {
+            view.panX = startPanX + dx;
+            view.panY = startPanY + dy;
+            render();
+        }
+    });
+    container.addEventListener('pointerup', (e) => {
+        if (e.pointerId !== activePointerId) return;
+        let wasDragging = isDragging;
+        isDragging = false; activePointerId = null;
+        if (!wasDragging && !moved && !e.target.closest('.node-box') && !e.target.closest('.node-dot')) {
+            if (editMode) selectNode(null);
+        }
+        moved = false;
+    });
+    container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        let delta = e.deltaY > 0 ? -0.08 : 0.08;
+        let newScale = Math.max(0.15, Math.min(3, view.scale + delta));
+        let ratio = newScale / view.scale;
+        view.scale = newScale;
+        view.panX = e.clientX - (e.clientX - view.panX) * ratio;
+        view.panY = e.clientY - (e.clientY - view.panY) * ratio;
+        render();
+    }, { passive: false });
+
+    let lastTouchDistance = 0;
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            lastTouchDistance = Math.sqrt(dx * dx + dy * dy);
+        }
+    }, { passive: true });
+    container.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const newDist = Math.sqrt(dx * dx + dy * dy);
+            if (lastTouchDistance > 0) {
+                const scaleChange = newDist / lastTouchDistance;
+                const newScale = Math.max(0.15, Math.min(3, view.scale * scaleChange));
+                const ratio = newScale / view.scale;
                 view.scale = newScale;
-                view.panX = e.clientX - (e.clientX - view.panX) * ratio;
-                view.panY = e.clientY - (e.clientY - view.panY) * ratio;
+                const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                view.panX = centerX - (centerX - view.panX) * ratio;
+                view.panY = centerY - (centerY - view.panY) * ratio;
                 render();
-            }, { passive: false });
-
-            const modalEdit = document.getElementById('modal-edit');
-            function showEditModal() {
-                if (!selectedId || !editMode) return;
-                const node = getNode(selectedId);
-                if (!node) return;
-                document.getElementById('edit-text').value = node.text;
-                document.getElementById('edit-link').value = node.link || '';
-                modalEdit.classList.add('show');
             }
-            document.getElementById('edit-cancel').addEventListener('click', () => modalEdit.classList.remove('show'));
-            document.getElementById('edit-save').addEventListener('click', () => {
-                if (!selectedId || !editMode) return;
-                const node = getNode(selectedId);
-                if (!node) return;
-                const text = document.getElementById('edit-text').value.trim();
-                if (!text) return;
-                node.text = text;
-                node.link = document.getElementById('edit-link').value.trim();
-                modalEdit.classList.remove('show');
-                render();
-                saveAll();
-            });
+            lastTouchDistance = newDist;
+        }
+    }, { passive: false });
 
-            const modalDocs = document.getElementById('modal-docs');
+    const modalEdit = document.getElementById('modal-edit');
+    function showEditModal() {
+        if (!selectedId || !editMode) return;
+        const node = getNode(selectedId);
+        if (!node) return;
+        document.getElementById('edit-text').value = node.text;
+        document.getElementById('edit-link').value = node.link || '';
+        modalEdit.classList.add('show');
+    }
+    document.getElementById('edit-cancel').addEventListener('click', () => modalEdit.classList.remove('show'));
+    document.getElementById('edit-save').addEventListener('click', () => {
+        if (!selectedId || !editMode) return;
+        const node = getNode(selectedId);
+        if (!node) return;
+        const text = document.getElementById('edit-text').value.trim();
+        if (!text) return;
+        node.text = text;
+        node.link = document.getElementById('edit-link').value.trim();
+        modalEdit.classList.remove('show');
+        render();
+        saveAll();
+    });            const modalDocs = document.getElementById('modal-docs');
             const docListEl = document.getElementById('doc-list');
 
             function showDocsModal() {
@@ -497,6 +563,8 @@
                     nameSpan.addEventListener('click', () => {
                         currentDocId = doc.id;
                         selectedId = null;
+                        currentFocusNodeId = null;
+                        focusStack = [];
                         buildNodeMap();
                         resetView();
                         saveAll();
@@ -528,6 +596,8 @@
                             docs = docs.filter(d => d.id !== doc.id);
                             if (currentDocId === doc.id) {
                                 currentDocId = docs.length ? docs[0].id : null;
+                                currentFocusNodeId = null;
+                                focusStack = [];
                                 if (currentDocId) {
                                     buildNodeMap();
                                     resetView();
@@ -556,6 +626,8 @@
                 docs.push(newDoc);
                 currentDocId = newDoc.id;
                 selectedId = null;
+                currentFocusNodeId = null;
+                focusStack = [];
                 buildNodeMap();
                 resetView();
                 saveAll();
@@ -716,6 +788,8 @@
                     else if (action === 'collapse-all') collapseAll();
                     else if (action === 'export-png') exportToPNG();
                     else if (action === 'reset-view') resetView();
+                    else if (action === 'focus' && selectedId) focusNode(selectedId);
+                    else if (action === 'unfocus') unfocusNode();
                 });
             });
 
