@@ -3,15 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>放射状思维导图 · cPPT导入修复版</title>
-    <!-- 引入JSZip，并添加备用CDN -->
+    <title>放射状思维导图 · 智能调整版</title>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script>
-        // 如果主CDN加载失败，尝试备用
-        if (typeof JSZip === 'undefined') {
-            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>');
-        }
-    </script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
         html,body{width:100%;height:100%;overflow:hidden;background:#f7f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;position:fixed;touch-action:none}
@@ -44,6 +37,16 @@
         #hint-text{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#a0aab5;font-size:14px;pointer-events:none;transition:opacity 0.3s;z-index:3}
         #hint-text.hidden{opacity:0}
         .tag-badge{display:inline-block;background:#e8f0fe;color:#5b8ff9;border-radius:6px;padding:1px 6px;font-size:10px;margin-left:4px}
+
+        /* 调整模态框专用样式 */
+        .adjust-list{max-height:300px;overflow-y:auto;border:1px solid #e0e3e8;border-radius:10px;padding:8px}
+        .adjust-item{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #f0f0f0}
+        .adjust-item:last-child{border-bottom:none}
+        .adjust-text{flex:1;font-size:14px;word-break:break-all}
+        .adjust-actions{display:flex;gap:6px}
+        .adjust-btn{min-width:32px;height:32px;border-radius:6px;border:1px solid #d0d5dd;background:#fff;cursor:pointer;font-size:14px;padding:0 8px}
+        .adjust-btn:active{background:#e8f0fe}
+        .adjust-indent{margin-left:20px}
     </style>
 </head>
 <body>
@@ -80,11 +83,24 @@
 
     <div id="modal-import" class="modal-overlay">
         <div class="modal-box">
-            <h3>📥 导入文本（智能整理升级）</h3>
-            <textarea id="import-textarea" placeholder="粘贴文本，支持空行分层、短句标题、冒号引导等"></textarea>
+            <h3>📥 导入文本</h3>
+            <textarea id="import-textarea" placeholder="粘贴文本，自动解析后可在预览中调整层级"></textarea>
             <div class="modal-actions">
                 <button class="modal-btn" id="import-cancel">取消</button>
-                <button class="modal-btn primary" id="import-smart">生成导图</button>
+                <button class="modal-btn primary" id="import-smart">解析并调整</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 调整层级模态框 -->
+    <div id="modal-adjust" class="modal-overlay">
+        <div class="modal-box">
+            <h3>调整节点层级</h3>
+            <p style="font-size:13px;color:#666;margin-bottom:8px;">点击按钮调整父子关系，完成后点击“生成导图”</p>
+            <div id="adjust-list" class="adjust-list"></div>
+            <div class="modal-actions">
+                <button class="modal-btn" id="adjust-cancel">取消</button>
+                <button class="modal-btn primary" id="adjust-confirm">生成导图</button>
             </div>
         </div>
     </div>
@@ -124,110 +140,147 @@
             container.addEventListener('touchend',e=>{if(e.touches.length<2)pinchDist=0},{passive:true});
             function selectNode(id){selectedId=id;render();updateButtons()}
             // ==================== 模态框控制 ====================
-            const modalEdit=document.getElementById('modal-edit'),modalImport=document.getElementById('modal-import');
+            const modalEdit=document.getElementById('modal-edit'),modalImport=document.getElementById('modal-import'),modalAdjust=document.getElementById('modal-adjust');
             function showModal(m){m.classList.add('show')}
             function hideModal(m){m.classList.remove('show')}
             document.getElementById('edit-cancel').addEventListener('click',()=>hideModal(modalEdit));
             document.getElementById('edit-save').addEventListener('click',()=>{if(!selectedId)return;let node=getNode(selectedId);if(!node)return;let text=document.getElementById('edit-text').value.trim();if(!text){alert('文字不能为空');return}node.text=text;node.note=document.getElementById('edit-note').value.trim();let tagsStr=document.getElementById('edit-tags').value.trim();node.tags=tagsStr?tagsStr.split(',').map(s=>s.trim()).filter(Boolean):[];node.link=document.getElementById('edit-link').value.trim();hideModal(modalEdit);render()});
             function showEditModal(){if(!selectedId){alert('请先点击小圆点选中节点');return}let node=getNode(selectedId);if(!node)return;document.getElementById('edit-text').value=node.text;document.getElementById('edit-note').value=node.note||'';document.getElementById('edit-tags').value=node.tags?node.tags.join(','):'';document.getElementById('edit-link').value=node.link||'';showModal(modalEdit)}
+            // 导入与调整
             document.getElementById('import-cancel').addEventListener('click',()=>hideModal(modalImport));
-            document.getElementById('import-smart').addEventListener('click',()=>{let text=document.getElementById('import-textarea').value.trim();if(!text){alert('请粘贴文本');return;}let result=smartParse(text);if(result){rootNode=result;selectedId=null;buildNodeMap();resetView();hideModal(modalImport);}});
+            document.getElementById('import-smart').addEventListener('click',()=>{
+                const text=document.getElementById('import-textarea').value.trim();
+                if(!text){alert('请粘贴文本');return;}
+                const initialRoot=smartParse(text);
+                if(initialRoot){ openAdjustModal(initialRoot); hideModal(modalImport); }
+            });
             function showImportModal(){document.getElementById('import-textarea').value='';showModal(modalImport);document.getElementById('import-textarea').focus()}
-            // ==================== PPT导入 ====================
-            const pptFileInput = document.getElementById('ppt-file-input');
-            // 确保只绑定一次
-            pptFileInput.removeEventListener('change', handlePPTFile);
-            pptFileInput.addEventListener('change', handlePPTFile);
-            function handlePPTFile(event){
-                const file = event.target.files[0];
-                if (!file) return;
-                if (!file.name.toLowerCase().endsWith('.pptx')) {
-                    alert('请选择.pptx格式的PPT文件');
-                    return;
-                }
-                // 检查JSZip是否可用
-                if (typeof JSZip === 'undefined') {
-                    alert('JSZip库未加载，请检查网络后重试');
-                    return;
-                }
-                alert('正在解析PPT，请稍候...');
-                extractTextFromPPTX(file).then(text => {
-                    if (text) {
-                        const result = smartParse(text);
-                        if (result) {
-                            rootNode = result;
-                            selectedId = null;
-                            buildNodeMap();
-                            resetView();
-                        }
-                    } else {
-                        alert('未能从PPT中提取到文字');
-                    }
-                }).catch(err => {
-                    alert('解析失败：' + err.message);
-                });
-            }
+
+            // PPT导入
+            const pptFileInput=document.getElementById('ppt-file-input');
+            document.querySelector('[data-action="ppt-import"]').addEventListener('click',()=>{pptFileInput.click();});
+            pptFileInput.addEventListener('change',async function(e){
+                const file=e.target.files[0];
+                if(!file)return;
+                if(!file.name.toLowerCase().endsWith('.pptx')){alert('请选择.pptx文件');return;}
+                try{
+                    const text=await extractTextFromPPTX(file);
+                    if(text){ const initialRoot=smartParse(text); if(initialRoot) openAdjustModal(initialRoot); }
+                    else alert('未提取到文字');
+                }catch(err){alert('解析失败：'+err.message);}
+            });
             async function extractTextFromPPTX(file){
-                const zip = await JSZip.loadAsync(file);
-                const slideFiles = Object.keys(zip.files).filter(name => /^ppt\/slides\/slide\d+\.xml$/.test(name));
-                // 按数字排序
-                slideFiles.sort((a, b) => {
-                    const numA = parseInt(a.match(/\d+/)[0]);
-                    const numB = parseInt(b.match(/\d+/)[0]);
-                    return numA - numB;
-                });
-                let allText = '';
-                for (const slideFile of slideFiles) {
-                    const xml = await zip.files[slideFile].async('string');
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(xml, 'application/xml');
-                    const textNodes = xmlDoc.getElementsByTagName('a:t');
-                    const slideText = Array.from(textNodes).map(node => node.textContent).join(' ');
-                    if (slideText.trim()) {
-                        allText += slideText.trim() + '\n\n';
-                    }
+                if(typeof JSZip==='undefined')throw new Error('JSZip未加载');
+                const zip=await JSZip.loadAsync(file);
+                const slideFiles=Object.keys(zip.files).filter(name=>/^ppt\/slides\/slide\d+\.xml$/.test(name));
+                slideFiles.sort((a,b)=>parseInt(a.match(/\d+/)[0])-parseInt(b.match(/\d+/)[0]));
+                let allText='';
+                for(const slideFile of slideFiles){
+                    const xml=await zip.files[slideFile].async('string');
+                    const parser=new DOMParser();
+                    const xmlDoc=parser.parseFromString(xml,'application/xml');
+                    const texts=[...xmlDoc.getElementsByTagName('a:t')].map(n=>n.textContent);
+                    if(texts.length) allText+=texts.join(' ')+'\n\n';
                 }
                 return allText.trim();
             }
-            // ==================== 智能解析（升级版） ====================
-            function smartParse(rawText){
-                const paragraphs = rawText.split(/\n\s*\n/).map(p => p.trim()).filter(p => p !== '');
-                if (paragraphs.length === 0) return null;
-                const firstPara = paragraphs[0];
-                const firstLine = firstPara.split('\n')[0].trim();
-                const root = createNode(cleanText(firstLine) || '未命名');
-                const stack = [{ node: root, level: 0 }];
-                // 处理第一个段落的剩余行
-                if (firstPara.split('\n').length > 1) {
-                    const lines = firstPara.split('\n').map(l => l.trim()).filter(l => l !== '');
-                    for (let j = 1; j < lines.length; j++) {
-                        const newNode = createNode(compressText(lines[j]));
-                        root.children.push(newNode);
-                        newNode.depth = 1;
+            // ==================== 调整模态框 ====================
+            let adjustListData=[]; // 存储 {text, depth, id, parentId}
+            function openAdjustModal(root){
+                // 将树扁平化，保留深度和父子关系
+                adjustListData=[];
+                (function flatten(node, depth, parentId){
+                    const item={text:node.text, depth:depth, id:node.id, parentId:parentId};
+                    adjustListData.push(item);
+                    node.children.forEach(ch=>flatten(ch, depth+1, node.id));
+                })(root, 0, null);
+                renderAdjustList();
+                showModal(modalAdjust);
+            }
+            function renderAdjustList(){
+                const listEl=document.getElementById('adjust-list');
+                listEl.innerHTML='';
+                adjustListData.forEach((item,index)=>{
+                    const row=document.createElement('div');
+                    row.className='adjust-item';
+                    row.style.marginLeft=(item.depth*20)+'px';
+                    const textSpan=document.createElement('span');
+                    textSpan.className='adjust-text';
+                    textSpan.textContent=item.text;
+                    const btnGroup=document.createElement('div');
+                    btnGroup.className='adjust-actions';
+                    // 提升按钮（向左箭头）
+                    const btnUp=document.createElement('button');
+                    btnUp.className='adjust-btn';
+                    btnUp.textContent='←';
+                    btnUp.title='提升一级';
+                    btnUp.addEventListener('click',()=>{ if(item.depth>0){ item.depth--; renderAdjustList(); } });
+                    // 缩进按钮（向右箭头）
+                    const btnDown=document.createElement('button');
+                    btnDown.className='adjust-btn';
+                    btnDown.textContent='→';
+                    btnDown.title='降为子节点';
+                    btnDown.addEventListener('click',()=>{ if(item.depth<5){ item.depth++; renderAdjustList(); } });
+                    // 删除按钮
+                    const btnDel=document.createElement('button');
+                    btnDel.className='adjust-btn';
+                    btnDel.textContent='🗑';
+                    btnDel.title='删除节点';
+                    btnDel.addEventListener('click',()=>{ adjustListData.splice(index,1); renderAdjustList(); });
+                    btnGroup.appendChild(btnUp);
+                    btnGroup.appendChild(btnDown);
+                    btnGroup.appendChild(btnDel);
+                    row.appendChild(textSpan);
+                    row.appendChild(btnGroup);
+                    listEl.appendChild(row);
+                });
+            }
+            document.getElementById('adjust-cancel').addEventListener('click',()=>hideModal(modalAdjust));
+            document.getElementById('adjust-confirm').addEventListener('click',()=>{
+                // 从扁平列表重建树
+                const newRoot=createNode(adjustListData[0]?.text||'中心主题');
+                const stack=[{node:newRoot, depth:0}];
+                for(let i=1;i<adjustListData.length;i++){
+                    const item=adjustListData[i];
+                    const node=createNode(item.text);
+                    while(stack.length>1 && stack[stack.length-1].depth >= item.depth){
+                        stack.pop();
                     }
+                    const parent=stack[stack.length-1].node;
+                    parent.children.push(node);
+                    node.depth=parent.depth+1;
+                    stack.push({node:node, depth:item.depth});
                 }
-                // 处理后续段落
-                for (let i = 1; i < paragraphs.length; i++) {
-                    const para = paragraphs[i];
-                    const lines = para.split('\n').map(l => l.trim()).filter(l => l !== '');
-                    if (lines.length === 0) continue;
-                    // 段落首句作为一级节点
-                    const titleNode = createNode(compressText(lines[0]));
+                rootNode=newRoot;
+                selectedId=null;
+                buildNodeMap();
+                resetView();
+                hideModal(modalAdjust);
+            });
+
+            // ==================== 智能解析（基础版，生成初始树） ====================
+            function smartParse(rawText){
+                const paragraphs=rawText.split(/\n\s*\n/).map(p=>p.trim()).filter(p=>p!=='');
+                if(paragraphs.length===0)return null;
+                const firstPara=paragraphs[0];
+                const firstLine=firstPara.split('\n')[0].trim();
+                const root=createNode(cleanText(firstLine)||'未命名');
+                const firstLines=firstPara.split('\n').map(l=>l.trim()).filter(l=>l!=='');
+                for(let j=1;j<firstLines.length;j++){
+                    const newNode=createNode(compressText(firstLines[j]));
+                    root.children.push(newNode);
+                    newNode.depth=1;
+                }
+                for(let i=1;i<paragraphs.length;i++){
+                    const lines=paragraphs[i].split('\n').map(l=>l.trim()).filter(l=>l!=='');
+                    if(lines.length===0)continue;
+                    const titleNode=createNode(compressText(lines[0]));
                     root.children.push(titleNode);
-                    titleNode.depth = 1;
-                    // 剩余行作为子节点
-                    for (let j = 1; j < lines.length; j++) {
-                        let content = lines[j];
-                        if (content.endsWith('：') || content.endsWith(':')) {
-                            const subTitle = content.slice(0, -1).trim();
-                            const subNode = createNode(compressText(subTitle));
-                            titleNode.children.push(subNode);
-                            subNode.depth = 2;
-                        } else {
-                            const subNode = createNode(compressText(content));
-                            titleNode.children.push(subNode);
-                            subNode.depth = 2;
-                        }
+                    titleNode.depth=1;
+                    for(let j=1;j<lines.length;j++){
+                        const subNode=createNode(compressText(lines[j]));
+                        titleNode.children.push(subNode);
+                        subNode.depth=2;
                     }
                 }
                 return root;
@@ -235,10 +288,8 @@
             function cleanText(str){return str.replace(/\s+/g,' ').trim();}
             function compressText(str){
                 const stop=['的','了','是','在','和','与','及','或','一个','一种','这个','那个','我们','你们','他们','它们','进行','以及','但是','然而','因此','所以','如果','那么','通过','对于','根据','关于','由于','为了','可以','可能','应该','需要','必须','已经','正在','将要','等','等等','之','其','该'];
-                let words = str.split(' ');
-                let filtered = words.filter(w => !stop.includes(w));
-                let result = filtered.join(' ');
-                if (result.length > 20) result = result.substring(0, 20) + '...';
+                let words=str.split(' ');let filtered=words.filter(w=>!stop.includes(w));let result=filtered.join(' ');
+                if(result.length>20)result=result.substring(0,20)+'...';
                 return result.trim();
             }
             // ==================== 节点操作 ====================
