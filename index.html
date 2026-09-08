@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>放射状思维导图 · 防重叠优化</title>
+    <title>放射状思维导图 · 最终防重叠版</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
         html,body{width:100%;height:100%;overflow:hidden;background:#f7f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;position:fixed;touch-action:none}
@@ -201,12 +201,32 @@
                 return res;
             }
 
-            function getDistance(d) {
+            // 动态计算节点距离：根据文字长度估算节点宽度，结合扇区角度确保不重叠
+            function getRequiredDistance(children, sectorStart, sectorEnd, depth) {
+                if (!children.length) return getBaseDistance(depth);
+                const fontSize = depth === 0 ? 16 : 14;
+                // 每个字符约占0.6倍fontSize像素宽度
+                const widths = children.map(c => Math.max(c.text.length * fontSize * 0.6 + 30, 60));
+                const totalAngle = (sectorEnd - sectorStart) * Math.PI / 180;
+                // 计算每个子节点需要的最小弧长，取最大值
+                let minDistance = 0;
+                for (let w of widths) {
+                    // 弧长 = 半径 * 角度，需满足 弧长 >= 节点宽度 + 间距
+                    // 半径 >= (节点宽度 + 间距) / 角度
+                    const anglePerChild = totalAngle / children.length;
+                    const requiredRadius = (w + 20) / Math.max(anglePerChild, 0.1);
+                    minDistance = Math.max(minDistance, requiredRadius);
+                }
+                // 加上基础距离限制
+                const baseDist = getBaseDistance(depth);
+                return Math.max(baseDist, minDistance);
+            }
+
+            function getBaseDistance(d) {
                 if (d === 0) return 0;
                 if (d === 1) return 190;
-                if (d === 2) return 160;
-                if (d === 3) return 145;
-                return 130;
+                if (d === 2) return 170;
+                return 150;
             }
 
             function calculateLayout() {
@@ -218,33 +238,14 @@
                     node.sectorEnd = end;
                     const children = node.children;
                     if (!children.length) return;
-
-                    // 根据文字长度分配权重（长文本获得更大扇区）
-                    const weights = children.map(child => Math.max(child.text.length, 2));
-                    const totalWeight = weights.reduce((a,b)=>a+b,0);
-                    let angles = weights.map(w => {
-                        let angle = (end - start) * (w / totalWeight);
-                        return Math.max(angle, 10); // 最小10度
-                    });
-
-                    // 如果总角度超过可用角度，按比例缩放
-                    let sumAngles = angles.reduce((a,b)=>a+b,0);
-                    if (sumAngles > (end - start)) {
-                        const scale = (end - start) / sumAngles;
-                        angles = angles.map(a => a * scale);
-                        sumAngles = end - start;
-                    }
-
-                    let currentAngle = start;
+                    const per = (end - start) / children.length;
                     children.forEach((child, i) => {
-                        let childStart = currentAngle;
-                        let childEnd = currentAngle + angles[i];
-                        child.angle = (childStart + childEnd) / 2;
-                        assignSectors(child, childStart, childEnd);
-                        currentAngle = childEnd;
+                        let s = start + i * per;
+                        let e = s + per;
+                        child.angle = s + per / 2;
+                        assignSectors(child, s, e);
                     });
                 }
-
                 assignSectors(root, 0, 360);
 
                 (function computePositions(node, px, py) {
@@ -252,14 +253,14 @@
                         node.x = 0;
                         node.y = 0;
                     } else {
-                        let baseDist = getDistance(node.depth);
                         const parent = getNode(node.parentId);
-                        if (parent && parent.children.length > 5) {
-                            baseDist *= (1 + parent.children.length * 0.03);
+                        if (parent) {
+                            // 动态计算父节点到子节点的距离
+                            const dist = getRequiredDistance(parent.children, parent.sectorStart, parent.sectorEnd, node.depth);
+                            let rad = (node.angle - 90) * Math.PI / 180;
+                            node.x = px + Math.cos(rad) * dist;
+                            node.y = py + Math.sin(rad) * dist;
                         }
-                        let rad = (node.angle - 90) * Math.PI / 180;
-                        node.x = px + Math.cos(rad) * baseDist;
-                        node.y = py + Math.sin(rad) * baseDist;
                     }
                     if (!node.collapsed) node.children.forEach(ch => computePositions(ch, node.x, node.y));
                 })(root, 0, 0);
@@ -328,7 +329,7 @@
                     box.style.fontSize = fontSize + 'px';
                     box.style.padding = `${8 * s}px ${16 * s}px`;
                     box.style.borderRadius = `${10 * s}px`;
-                    box.style.width = (Math.max(node.text.length * fontSize + 32 * s, 80 * s)) + 'px';
+                    box.style.width = (Math.max(node.text.length * fontSize * 0.6 + 32 * s, 80 * s)) + 'px';
                     box.style.minHeight = (36 * s) + 'px';
                     box.style.display = 'flex';
                     box.style.alignItems = 'center';
