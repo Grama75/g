@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>放射状思维导图 · 完整版</title>
+    <title>放射状思维导图 · 防重叠优化</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
         html,body{width:100%;height:100%;overflow:hidden;background:#f7f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;position:fixed;touch-action:none}
@@ -100,7 +100,7 @@
             let selectedId = null;
             let editMode = true;
 
-            const STORAGE_KEY = 'mindmap_docs_v2';   // 改回旧版本键名，恢复之前数据
+            const STORAGE_KEY = 'mindmap_docs_v2';
 
             function saveAll() {
                 try {
@@ -203,42 +203,50 @@
 
             function getDistance(d) {
                 if (d === 0) return 0;
-                if (d === 1) return 180;
-                if (d === 2) return 150;
-                if (d === 3) return 130;
-                return 120;
+                if (d === 1) return 190;
+                if (d === 2) return 160;
+                if (d === 3) return 145;
+                return 130;
             }
 
             function calculateLayout() {
                 const root = getRootNode();
                 if (!root) return;
+
                 function assignSectors(node, start, end) {
                     node.sectorStart = start;
                     node.sectorEnd = end;
-                    let childCount = node.children.length;
-                    if (!childCount) return;
-                    const minAngle = 12;
-                    let sectorSize = end - start;
-                    let per = sectorSize / childCount;
-                    if (per < minAngle && childCount > 1) {
-                        let needed = minAngle * childCount;
-                        if (needed > 360) needed = 360;
-                        let center = (start + end) / 2;
-                        start = center - needed / 2;
-                        end = center + needed / 2;
-                        node.sectorStart = start;
-                        node.sectorEnd = end;
-                        sectorSize = needed;
-                        per = minAngle;
+                    const children = node.children;
+                    if (!children.length) return;
+
+                    // 根据文字长度分配权重（长文本获得更大扇区）
+                    const weights = children.map(child => Math.max(child.text.length, 2));
+                    const totalWeight = weights.reduce((a,b)=>a+b,0);
+                    let angles = weights.map(w => {
+                        let angle = (end - start) * (w / totalWeight);
+                        return Math.max(angle, 10); // 最小10度
+                    });
+
+                    // 如果总角度超过可用角度，按比例缩放
+                    let sumAngles = angles.reduce((a,b)=>a+b,0);
+                    if (sumAngles > (end - start)) {
+                        const scale = (end - start) / sumAngles;
+                        angles = angles.map(a => a * scale);
+                        sumAngles = end - start;
                     }
-                    node.children.forEach((child, i) => {
-                        let s = start + i * per;
-                        let e = s + per;
-                        child.angle = s + per / 2;
-                        assignSectors(child, s, e);
+
+                    let currentAngle = start;
+                    children.forEach((child, i) => {
+                        let childStart = currentAngle;
+                        let childEnd = currentAngle + angles[i];
+                        child.angle = (childStart + childEnd) / 2;
+                        assignSectors(child, childStart, childEnd);
+                        currentAngle = childEnd;
                     });
                 }
+
                 assignSectors(root, 0, 360);
+
                 (function computePositions(node, px, py) {
                     if (node.depth === 0) {
                         node.x = 0;
@@ -246,8 +254,8 @@
                     } else {
                         let baseDist = getDistance(node.depth);
                         const parent = getNode(node.parentId);
-                        if (parent && parent.children.length > 4) {
-                            baseDist *= (1 + parent.children.length * 0.05);
+                        if (parent && parent.children.length > 5) {
+                            baseDist *= (1 + parent.children.length * 0.03);
                         }
                         let rad = (node.angle - 90) * Math.PI / 180;
                         node.x = px + Math.cos(rad) * baseDist;
