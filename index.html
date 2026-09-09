@@ -17,7 +17,6 @@
         .node-box.level-2{background:#fff}
         .node-box.selected{box-shadow:0 4px 16px rgba(0,0,0,0.12),0 0 0 3px #e8f0fe;border-color:#5b8ff9}
         .node-box.has-link{border-style:dashed;border-color:#5b8ff9}
-        /* 节点动画 */
         @keyframes nodePop {
             0% { transform: scale(0.8); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
@@ -55,9 +54,7 @@
         .doc-name{flex:1;font-size:15px;word-break:break-all}
         .doc-actions{display:flex;gap:4px}
         .doc-btn{min-width:32px;height:32px;border-radius:6px;border:1px solid #d0d5dd;background:#fff;cursor:pointer;font-size:14px}
-        /* 搜索高亮 */
         .node-box.search-match{box-shadow:0 0 0 3px #ff9800, 0 4px 16px rgba(0,0,0,0.12);border-color:#ff9800}
-        /* 备注弹窗 */
         #note-popup{position:fixed;z-index:25;background:#fff;border-radius:12px;padding:15px;box-shadow:0 6px 20px rgba(0,0,0,0.2);max-width:300px;display:none;word-break:break-word}
     </style>
 </head>
@@ -88,7 +85,6 @@
         <button class="toolbar-btn" data-action="reset-view">重置</button>
     </div>
 
-    <!-- 编辑节点模态框（含样式） -->
     <div id="modal-edit" class="modal-overlay">
         <div class="modal-box">
             <h3>编辑节点</h3>
@@ -105,7 +101,6 @@
         </div>
     </div>
 
-    <!-- 文档管理模态框 -->
     <div id="modal-docs" class="modal-overlay">
         <div class="modal-box">
             <h3>思维导图列表</h3>
@@ -122,7 +117,6 @@
         </div>
     </div>
 
-    <!-- 搜索模态框 -->
     <div id="modal-search" class="modal-overlay">
         <div class="modal-box">
             <h3>搜索节点</h3>
@@ -147,6 +141,9 @@
     let history = [];
     let historyIndex = -1;
     const MAX_HISTORY = 50;
+
+    // 动画控制标志
+    let allowAnimation = false;
 
     const STORAGE_KEY = 'mindmap_docs_v2';
 
@@ -348,6 +345,8 @@
         renderNodes();
         zoomIndicator.textContent = Math.round(view.scale * 100) + '%';
         updateButtons();
+        // 动画结束后重置标志，避免下次渲染误触发
+        allowAnimation = false;
     }
 
     function renderSVG() {
@@ -383,7 +382,11 @@
             wrapper.style.top = screen.y + 'px';
 
             let box = document.createElement('div');
-            box.className = 'node-box anim';
+            box.className = 'node-box';
+            // 仅在允许动画时添加动画类
+            if (allowAnimation) {
+                box.classList.add('anim');
+            }
             if (node.depth === 0) box.classList.add('root-node');
             else if (node.depth === 1) box.classList.add('level-1');
             else if (node.depth === 2) box.classList.add('level-2');
@@ -861,6 +864,7 @@
         const root = getRootNode();
         if (!root) return;
         saveHistory();
+        allowAnimation = true; // 启用动画
         (function traverse(node) { node.collapsed = false; node.children.forEach(ch => traverse(ch)); })(root);
         render();
         saveAll();
@@ -869,6 +873,7 @@
         const root = getRootNode();
         if (!root) return;
         saveHistory();
+        allowAnimation = true; // 启用动画
         (function traverse(node) { if (node.depth > 0) node.collapsed = true; node.children.forEach(ch => traverse(ch)); })(root);
         render();
         saveAll();
@@ -878,71 +883,7 @@
         view.panX = window.innerWidth / 2;
         view.panY = window.innerHeight / 2;
         render();
-    }
-    function exportToPNG() {
-        let nodes = getVisibleNodes();
-        if (!nodes.length) return;
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        nodes.forEach(n => {
-            minX = Math.min(minX, n.x - 70);
-            maxX = Math.max(maxX, n.x + 70);
-            minY = Math.min(minY, n.y - 30);
-            maxY = Math.max(maxY, n.y + 30);
-        });
-        let pad = 80, w = Math.ceil(maxX - minX + pad * 2), h = Math.ceil(maxY - minY + pad * 2);
-        let canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        let ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#f7f8fa';
-        ctx.fillRect(0, 0, w, h);
-        let offX = -minX + pad, offY = -minY + pad;
-        nodes.forEach(n => {
-            if (n.depth > 0 && n.parentId) {
-                let p = getNode(n.parentId);
-                if (!p) return;
-                ctx.beginPath();
-                ctx.moveTo(p.x + offX, p.y + offY);
-                ctx.bezierCurveTo((p.x + n.x) / 2 + offX, p.y + offY, (p.x + n.x) / 2 + offX, n.y + offY, n.x + offX, n.y + offY);
-                ctx.strokeStyle = '#b8c9dd';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-            }
-        });
-        nodes.forEach(n => {
-            let x = n.x + offX, y = n.y + offY;
-            const fs = n.depth === 0 ? 16 : 14;
-            ctx.font = `600 ${fs}px sans-serif`;
-            let tw = ctx.measureText(n.text).width;
-            let bw = Math.max(tw + 32, 56);
-            let bh = n.depth === 0 ? 42 : 34;
-            let r = n.depth === 0 ? 12 : 8;
-            ctx.fillStyle = n.depth === 0 ? '#5b8ff9' : (n.color || '#fff');
-            ctx.beginPath();
-            ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, r);
-            ctx.fill();
-            ctx.strokeStyle = n.depth === 0 ? '#2f5fc9' : '#d0d5dd';
-            ctx.stroke();
-            ctx.fillStyle = n.depth === 0 ? '#fff' : '#2c3e50';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(n.text, x, y);
-        });
-        let link = document.createElement('a');
-        link.download = '思维导图.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    }
-    if (!CanvasRenderingContext2D.prototype.roundRect) {
-        CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-            this.moveTo(x + r, y);
-            this.arcTo(x + w, y, x + w, y + h, r);
-            this.arcTo(x + w, y + h, x, y + h, r);
-            this.arcTo(x, y + h, x, y, r);
-            this.arcTo(x, y, x + w, y, r);
-            this.closePath();
-            return this;
-        };
-    }            // ==================== 新增功能：搜索 ====================
+    }            // 搜索
             const modalSearch = document.getElementById('modal-search');
             const searchInput = document.getElementById('search-input');
             const searchResults = document.getElementById('search-results');
@@ -974,7 +915,6 @@
                         div.style.cursor = 'pointer';
                         div.textContent = node.text;
                         div.addEventListener('click', () => {
-                            // 跳转到该节点（选中并平移到屏幕中心）
                             selectNode(node.id);
                             view.panX = window.innerWidth / 2 - node.x * view.scale;
                             view.panY = window.innerHeight / 2 - node.y * view.scale;
@@ -988,15 +928,13 @@
 
             document.getElementById('search-close').addEventListener('click', () => modalSearch.classList.remove('show'));
 
-            // ==================== 新增功能：备注弹窗 ====================
+            // 备注弹窗
             const notePopup = document.getElementById('note-popup');
             function showNotePopup(node, clientX, clientY) {
                 notePopup.textContent = node.note;
                 notePopup.style.display = 'block';
-                // 定位在点击位置附近
                 notePopup.style.left = (clientX + 10) + 'px';
                 notePopup.style.top = (clientY + 10) + 'px';
-                // 3秒后自动隐藏
                 clearTimeout(notePopup._timeout);
                 notePopup._timeout = setTimeout(() => { notePopup.style.display = 'none'; }, 3000);
             }
@@ -1006,7 +944,7 @@
                 }
             });
 
-            // ==================== 新增功能：导出Markdown ====================
+            // 导出Markdown
             function exportToMarkdown() {
                 const root = getRootNode();
                 if (!root) { alert('没有内容'); return; }
@@ -1026,7 +964,7 @@
                 URL.revokeObjectURL(url);
             }
 
-            // ==================== 工具栏事件统一分发 ====================
+            // 工具栏事件统一分发
             document.querySelectorAll('.toolbar-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const action = btn.dataset.action;
