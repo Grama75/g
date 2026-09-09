@@ -71,8 +71,10 @@
         <button class="toolbar-btn" data-action="redo" id="btn-redo">↪️ 重做</button>
         <button class="toolbar-btn" data-action="search" id="btn-search">🔍 搜索</button>
         <button class="toolbar-btn active-mode" data-action="toggle-mode" id="mode-btn">📝 编辑</button>
-        <button class="toolbar-btn" data-action="expand-all">展开</button>
-        <button class="toolbar-btn" data-action="collapse-all">收起</button>
+        <button class="toolbar-btn" data-action="expand-all">展开全部</button>
+        <button class="toolbar-btn" data-action="collapse-all">收起全部</button>
+        <!-- 新增：单独折叠/展开按钮 -->
+        <button class="toolbar-btn" data-action="toggle-collapse" id="btn-toggle-collapse" style="display:none;">🔽 折叠</button>
         <button class="toolbar-btn" data-action="open-link" id="btn-link">🔗 链接</button>
         <button class="toolbar-btn" data-action="add-child" id="btn-add-child">➕ 子节点</button>
         <button class="toolbar-btn" data-action="add-sibling" id="btn-add-sibling">🔗 兄弟</button>
@@ -345,7 +347,6 @@
         renderNodes();
         zoomIndicator.textContent = Math.round(view.scale * 100) + '%';
         updateButtons();
-        // 动画结束后重置标志，避免下次渲染误触发
         allowAnimation = false;
     }
 
@@ -383,7 +384,6 @@
 
             let box = document.createElement('div');
             box.className = 'node-box';
-            // 仅在允许动画时添加动画类
             if (allowAnimation) {
                 box.classList.add('anim');
             }
@@ -484,6 +484,18 @@
         if (focusBtn && unfocusBtn) {
             focusBtn.style.display = (editMode && selectedId) ? 'flex' : 'none';
             unfocusBtn.style.display = (editMode && currentFocusNodeId) ? 'flex' : 'none';
+        }
+
+        // 单独折叠/展开按钮
+        const toggleBtn = document.getElementById('btn-toggle-collapse');
+        if (toggleBtn) {
+            const node = selectedId ? getNode(selectedId) : null;
+            if (editMode && node && node.children.length > 0) {
+                toggleBtn.style.display = 'flex';
+                toggleBtn.textContent = node.collapsed ? '🔼 展开' : '🔽 折叠';
+            } else {
+                toggleBtn.style.display = 'none';
+            }
         }
     }
 
@@ -864,7 +876,7 @@
         const root = getRootNode();
         if (!root) return;
         saveHistory();
-        allowAnimation = true; // 启用动画
+        allowAnimation = true;
         (function traverse(node) { node.collapsed = false; node.children.forEach(ch => traverse(ch)); })(root);
         render();
         saveAll();
@@ -873,8 +885,19 @@
         const root = getRootNode();
         if (!root) return;
         saveHistory();
-        allowAnimation = true; // 启用动画
+        allowAnimation = true;
         (function traverse(node) { if (node.depth > 0) node.collapsed = true; node.children.forEach(ch => traverse(ch)); })(root);
+        render();
+        saveAll();
+    }
+    // 新增：单独折叠/展开选中节点
+    function toggleCollapseNode() {
+        if (!selectedId || !editMode) return;
+        const node = getNode(selectedId);
+        if (!node || node.children.length === 0) return;
+        saveHistory();
+        allowAnimation = true;
+        node.collapsed = !node.collapsed;
         render();
         saveAll();
     }
@@ -979,6 +1002,7 @@
                     else if (action === 'open-link') openLink();
                     else if (action === 'expand-all') expandAll();
                     else if (action === 'collapse-all') collapseAll();
+                    else if (action === 'toggle-collapse') toggleCollapseNode();
                     else if (action === 'export-png') exportToPNG();
                     else if (action === 'export-md') exportToMarkdown();
                     else if (action === 'reset-view') resetView();
