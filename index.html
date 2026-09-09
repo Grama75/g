@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>放射状思维导图 · 撤销重做+备份</title>
+    <title>放射状思维导图 · 全功能版</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
         html,body{width:100%;height:100%;overflow:hidden;background:#f7f8fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;position:fixed;touch-action:none}
@@ -11,12 +11,20 @@
         #svg-layer{position:absolute;inset:0;pointer-events:none;z-index:1}
         #nodes-layer{position:absolute;inset:0;z-index:2;pointer-events:auto}
         .node-wrapper{position:absolute;transform:translate(-50%,-50%);pointer-events:none}
-        .node-box{position:relative;pointer-events:auto;cursor:pointer;border-radius:10px;border:1.5px solid #e0e3e8;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,0.07);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:500;color:#2c3e50;white-space:normal;word-break:break-word;transition:box-shadow 0.2s}
+        .node-box{position:relative;pointer-events:auto;cursor:pointer;border-radius:10px;border:1.5px solid #e0e3e8;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,0.07);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:500;color:#2c3e50;white-space:normal;word-break:break-word;transition:box-shadow 0.2s, transform 0.2s}
         .node-box.root-node{background:linear-gradient(135deg,#5b8ff9,#3b6fe0);color:#fff;font-weight:700;font-size:16px;border-color:#2f5fc9}
         .node-box.level-1{background:linear-gradient(135deg,#fff,#f0f4fa);font-weight:600}
         .node-box.level-2{background:#fff}
         .node-box.selected{box-shadow:0 4px 16px rgba(0,0,0,0.12),0 0 0 3px #e8f0fe;border-color:#5b8ff9}
         .node-box.has-link{border-style:dashed;border-color:#5b8ff9}
+        /* 节点动画 */
+        @keyframes nodePop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .node-box.anim {
+            animation: nodePop 0.2s ease-out;
+        }
         .node-dot{position:absolute;width:14px;height:14px;border-radius:50%;background-color:#b8c4d0;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.18);pointer-events:auto;cursor:pointer;z-index:3;padding:6px;background-clip:content-box}
         .node-dot.active{background-color:#5b8ff9;transform:scale(1.1)}
         #toolbar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:10;display:flex;gap:6px;background:rgba(255,255,255,0.95);border:1px solid #e0e3e8;border-radius:18px;padding:8px 12px;box-shadow:0 6px 24px rgba(0,0,0,0.1);overflow-x:auto;max-width:96vw}
@@ -28,8 +36,9 @@
         .modal-overlay.show{display:flex}
         .modal-box{background:#fff;border-radius:20px;padding:20px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;overflow-y:auto}
         .modal-box h3{font-size:18px;margin-bottom:12px;color:#2c3e50}
-        .modal-box input[type="text"],.modal-box textarea{width:100%;border:1.5px solid #e0e3e8;border-radius:12px;padding:12px;font-size:14px;outline:none;margin-bottom:10px}
-        .modal-actions{display:flex;gap:10px;margin-top:10px;justify-content:flex-end}
+        .modal-box input[type="text"],.modal-box textarea,.modal-box select{width:100%;border:1.5px solid #e0e3e8;border-radius:12px;padding:12px;font-size:14px;outline:none;margin-bottom:10px}
+        .modal-box textarea{min-height:100px}
+        .modal-actions{display:flex;gap:10px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap}
         .modal-btn{padding:10px 18px;border-radius:10px;border:1px solid #d0d5dd;background:#fff;font-size:14px;font-weight:600;cursor:pointer}
         .modal-btn.primary{background:#5b8ff9;color:#fff;border-color:#5b8ff9}
         #zoom-indicator{position:fixed;top:12px;right:16px;background:rgba(255,255,255,0.95);border:1px solid #e0e3e8;border-radius:10px;padding:4px 10px;font-size:12px;font-weight:600;color:#5a6b7d;pointer-events:none;z-index:5}
@@ -46,6 +55,10 @@
         .doc-name{flex:1;font-size:15px;word-break:break-all}
         .doc-actions{display:flex;gap:4px}
         .doc-btn{min-width:32px;height:32px;border-radius:6px;border:1px solid #d0d5dd;background:#fff;cursor:pointer;font-size:14px}
+        /* 搜索高亮 */
+        .node-box.search-match{box-shadow:0 0 0 3px #ff9800, 0 4px 16px rgba(0,0,0,0.12);border-color:#ff9800}
+        /* 备注弹窗 */
+        #note-popup{position:fixed;z-index:25;background:#fff;border-radius:12px;padding:15px;box-shadow:0 6px 20px rgba(0,0,0,0.2);max-width:300px;display:none;word-break:break-word}
     </style>
 </head>
 <body>
@@ -54,10 +67,12 @@
     <div id="zoom-indicator">100%</div>
     <div id="mode-indicator">编辑模式</div>
     <div id="save-hint">已保存</div>
+    <div id="note-popup"></div>
     <div id="toolbar">
         <button class="toolbar-btn" data-action="docs">📁 文档</button>
         <button class="toolbar-btn" data-action="undo" id="btn-undo">↩️ 撤销</button>
         <button class="toolbar-btn" data-action="redo" id="btn-redo">↪️ 重做</button>
+        <button class="toolbar-btn" data-action="search" id="btn-search">🔍 搜索</button>
         <button class="toolbar-btn active-mode" data-action="toggle-mode" id="mode-btn">📝 编辑</button>
         <button class="toolbar-btn" data-action="expand-all">展开</button>
         <button class="toolbar-btn" data-action="collapse-all">收起</button>
@@ -69,14 +84,20 @@
         <button class="toolbar-btn" data-action="focus" id="btn-focus" style="display:none;">🔍 聚焦</button>
         <button class="toolbar-btn" data-action="unfocus" id="btn-unfocus" style="display:none;">↩️ 返回</button>
         <button class="toolbar-btn primary" data-action="export-png" id="btn-export">📤 导出PNG</button>
+        <button class="toolbar-btn" data-action="export-md" id="btn-export-md">📄 导出MD</button>
         <button class="toolbar-btn" data-action="reset-view">重置</button>
     </div>
 
+    <!-- 编辑节点模态框（含样式） -->
     <div id="modal-edit" class="modal-overlay">
         <div class="modal-box">
             <h3>编辑节点</h3>
             <input type="text" id="edit-text" placeholder="节点文字">
             <input type="text" id="edit-link" placeholder="链接（可选，https://...）">
+            <label style="font-size:14px;margin-bottom:5px;">节点颜色</label>
+            <input type="color" id="edit-color" value="#ffffff" style="height:40px;padding:2px;">
+            <label style="font-size:14px;margin-bottom:5px;">备注</label>
+            <textarea id="edit-note" placeholder="备注（可选）"></textarea>
             <div class="modal-actions">
                 <button class="modal-btn" id="edit-cancel">取消</button>
                 <button class="modal-btn primary" id="edit-save">保存</button>
@@ -84,6 +105,7 @@
         </div>
     </div>
 
+    <!-- 文档管理模态框 -->
     <div id="modal-docs" class="modal-overlay">
         <div class="modal-box">
             <h3>思维导图列表</h3>
@@ -100,6 +122,18 @@
         </div>
     </div>
 
+    <!-- 搜索模态框 -->
+    <div id="modal-search" class="modal-overlay">
+        <div class="modal-box">
+            <h3>搜索节点</h3>
+            <input type="text" id="search-input" placeholder="输入关键词...">
+            <div id="search-results" style="max-height:300px;overflow-y:auto;"></div>
+            <div class="modal-actions">
+                <button class="modal-btn primary" id="search-close">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="import-json-input" accept=".json" style="display:none">
 
     <script>(function(){
@@ -110,7 +144,6 @@
     let focusStack = [];
     let currentFocusNodeId = null;
 
-    // 撤销/重做相关
     let history = [];
     let historyIndex = -1;
     const MAX_HISTORY = 50;
@@ -152,6 +185,8 @@
             text: node.text,
             collapsed: node.collapsed || false,
             link: node.link || '',
+            color: node.color || '',
+            note: node.note || '',
             children: node.children.map(ch => serializeNode(ch))
         };
     }
@@ -161,6 +196,8 @@
         node.id = data.id;
         node.collapsed = data.collapsed || false;
         node.link = data.link || '';
+        node.color = data.color || '';
+        node.note = data.note || '';
         node.children = data.children.map(ch => deserializeNode(ch, node.id));
         return node;
     }
@@ -184,7 +221,9 @@
             x: 0,
             y: 0,
             collapsed: false,
-            link: ''
+            link: '',
+            color: '',
+            note: ''
         };
     }
 
@@ -222,10 +261,15 @@
         return res;
     }
 
-    function getRequiredDistance(children, sectorStart, sectorEnd, depth) {
+    function estimateNodeWidth(node) {
+        const fontSize = node.depth === 0 ? 16 : 14;
+        return Math.max(node.text.length * fontSize * 0.6 + 32, 80);
+    }
+
+    function getRequiredDistance(parent, children, sectorStart, sectorEnd, depth) {
         if (!children.length) return getBaseDistance(depth);
         const fontSize = depth === 0 ? 16 : 14;
-        const widths = children.map(c => Math.max(c.text.length * fontSize * 0.6 + 30, 60));
+        const widths = children.map(c => c._estWidth || estimateNodeWidth(c));
         const totalAngle = (sectorEnd - sectorStart) * Math.PI / 180;
         let minDistance = 0;
         for (let w of widths) {
@@ -234,7 +278,10 @@
             minDistance = Math.max(minDistance, requiredRadius);
         }
         const baseDist = getBaseDistance(depth);
-        return Math.max(baseDist, minDistance);
+        const parentWidth = parent._estWidth || estimateNodeWidth(parent);
+        const maxChildWidth = Math.max(...widths);
+        const minDistToClearParent = (parentWidth + maxChildWidth) / 2 + 20;
+        return Math.max(baseDist, minDistance, minDistToClearParent);
     }
 
     function getBaseDistance(d) {
@@ -247,6 +294,11 @@
     function calculateLayout() {
         const root = getRootNode();
         if (!root) return;
+
+        (function calcWidth(node) {
+            node._estWidth = estimateNodeWidth(node);
+            node.children.forEach(calcWidth);
+        })(root);
 
         function assignSectors(node, start, end) {
             node.sectorStart = start;
@@ -270,7 +322,7 @@
             } else {
                 const parent = getNode(node.parentId);
                 if (parent) {
-                    const dist = getRequiredDistance(parent.children, parent.sectorStart, parent.sectorEnd, node.depth);
+                    const dist = getRequiredDistance(parent, parent.children, parent.sectorStart, parent.sectorEnd, node.depth);
                     let rad = (node.angle - 90) * Math.PI / 180;
                     node.x = px + Math.cos(rad) * dist;
                     node.y = py + Math.sin(rad) * dist;
@@ -331,12 +383,13 @@
             wrapper.style.top = screen.y + 'px';
 
             let box = document.createElement('div');
-            box.className = 'node-box';
+            box.className = 'node-box anim';
             if (node.depth === 0) box.classList.add('root-node');
             else if (node.depth === 1) box.classList.add('level-1');
             else if (node.depth === 2) box.classList.add('level-2');
             if (node.id === selectedId) box.classList.add('selected');
             if (node.link) box.classList.add('has-link');
+            if (node.color) box.style.backgroundColor = node.color;
 
             const baseFontSize = node.depth === 0 ? 16 : 14;
             const fontSize = baseFontSize * s;
@@ -355,8 +408,9 @@
                 e.stopPropagation();
                 if (editMode) {
                     selectNode(node.id);
-                } else if (node.link) {
-                    window.open(node.link, '_blank');
+                } else {
+                    if (node.link) window.open(node.link, '_blank');
+                    if (node.note) showNotePopup(node, e.clientX, e.clientY);
                 }
             });
 
@@ -417,13 +471,11 @@
         }
         modeIndicator.textContent = editMode ? '编辑模式' : '复习模式';
 
-        // 更新撤销/重做按钮状态
         const undoBtn = document.getElementById('btn-undo');
         const redoBtn = document.getElementById('btn-redo');
         if (undoBtn) undoBtn.style.opacity = historyIndex > 0 ? '1' : '0.4';
         if (redoBtn) redoBtn.style.opacity = historyIndex < history.length - 1 ? '1' : '0.4';
 
-        // 聚焦按钮
         const focusBtn = document.getElementById('btn-focus');
         const unfocusBtn = document.getElementById('btn-unfocus');
         if (focusBtn && unfocusBtn) {
@@ -432,19 +484,15 @@
         }
     }
 
-    // 撤销/重做核心函数
     function saveHistory() {
         const doc = getCurrentDoc();
         if (!doc) return;
         const snapshot = JSON.stringify(doc.root);
-        // 移除当前位置之后的任何重做记录
         if (historyIndex < history.length - 1) {
             history = history.slice(0, historyIndex + 1);
         }
         history.push(snapshot);
-        if (history.length > MAX_HISTORY) {
-            history.shift();
-        }
+        if (history.length > MAX_HISTORY) history.shift();
         historyIndex = history.length - 1;
         updateButtons();
     }
@@ -589,6 +637,8 @@
         if (!node) return;
         document.getElementById('edit-text').value = node.text;
         document.getElementById('edit-link').value = node.link || '';
+        document.getElementById('edit-color').value = node.color || '#ffffff';
+        document.getElementById('edit-note').value = node.note || '';
         modalEdit.classList.add('show');
     }
     document.getElementById('edit-cancel').addEventListener('click', () => modalEdit.classList.remove('show'));
@@ -598,90 +648,150 @@
         if (!node) return;
         const text = document.getElementById('edit-text').value.trim();
         if (!text) return;
-        saveHistory(); // 记录历史
+        saveHistory();
         node.text = text;
         node.link = document.getElementById('edit-link').value.trim();
+        node.color = document.getElementById('edit-color').value;
+        node.note = document.getElementById('edit-note').value.trim();
         modalEdit.classList.remove('show');
         render();
         saveAll();
-    });            const modalDocs = document.getElementById('modal-docs');
-            const docListEl = document.getElementById('doc-list');
+    });
 
-            function showDocsModal() {
+    // 文档管理
+    const modalDocs = document.getElementById('modal-docs');
+    const docListEl = document.getElementById('doc-list');
+
+    function showDocsModal() {
+        renderDocList();
+        modalDocs.classList.add('show');
+    }
+
+    function renderDocList() {
+        docListEl.innerHTML = '';
+        docs.forEach(doc => {
+            const li = document.createElement('li');
+            li.className = doc.id === currentDocId ? 'active' : '';
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'doc-name';
+            nameSpan.textContent = doc.name;
+            nameSpan.addEventListener('click', () => {
+                currentDocId = doc.id;
+                selectedId = null;
+                currentFocusNodeId = null;
+                focusStack = [];
+                buildNodeMap();
+                resetView();
+                saveAll();
                 renderDocList();
-                modalDocs.classList.add('show');
-            }
-
-            function renderDocList() {
-                docListEl.innerHTML = '';
-                docs.forEach(doc => {
-                    const li = document.createElement('li');
-                    li.className = doc.id === currentDocId ? 'active' : '';
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'doc-name';
-                    nameSpan.textContent = doc.name;
-                    nameSpan.addEventListener('click', () => {
-                        currentDocId = doc.id;
-                        selectedId = null;
+                modalDocs.classList.remove('show');
+            });
+            const actions = document.createElement('div');
+            actions.className = 'doc-actions';
+            const renameBtn = document.createElement('button');
+            renameBtn.className = 'doc-btn';
+            renameBtn.textContent = '✏️';
+            renameBtn.title = '重命名';
+            renameBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const newName = prompt('输入新名称', doc.name);
+                if (newName && newName.trim()) {
+                    doc.name = newName.trim();
+                    saveAll();
+                    renderDocList();
+                }
+            });
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'doc-btn';
+            deleteBtn.textContent = '🗑';
+            deleteBtn.title = '删除';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm(`确定删除「${doc.name}」？此操作不可撤销。`)) {
+                    docs = docs.filter(d => d.id !== doc.id);
+                    if (currentDocId === doc.id) {
+                        currentDocId = docs.length ? docs[0].id : null;
                         currentFocusNodeId = null;
                         focusStack = [];
-                        buildNodeMap();
-                        resetView();
-                        saveAll();
-                        renderDocList();
-                        modalDocs.classList.remove('show');
-                    });
-                    const actions = document.createElement('div');
-                    actions.className = 'doc-actions';
-                    const renameBtn = document.createElement('button');
-                    renameBtn.className = 'doc-btn';
-                    renameBtn.textContent = '✏️';
-                    renameBtn.title = '重命名';
-                    renameBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const newName = prompt('输入新名称', doc.name);
-                        if (newName && newName.trim()) {
-                            doc.name = newName.trim();
-                            saveAll();
-                            renderDocList();
+                        if (currentDocId) {
+                            buildNodeMap();
+                            resetView();
+                        } else {
+                            createNewDoc('未命名导图');
                         }
-                    });
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'doc-btn';
-                    deleteBtn.textContent = '🗑';
-                    deleteBtn.title = '删除';
-                    deleteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (confirm(`确定删除「${doc.name}」？此操作不可撤销。`)) {
-                            docs = docs.filter(d => d.id !== doc.id);
-                            if (currentDocId === doc.id) {
-                                currentDocId = docs.length ? docs[0].id : null;
-                                currentFocusNodeId = null;
-                                focusStack = [];
-                                if (currentDocId) {
-                                    buildNodeMap();
-                                    resetView();
-                                } else {
-                                    createNewDoc('未命名导图');
-                                }
-                            }
-                            saveAll();
-                            renderDocList();
-                        }
-                    });
-                    actions.appendChild(renameBtn);
-                    actions.appendChild(deleteBtn);
-                    li.appendChild(nameSpan);
-                    li.appendChild(actions);
-                    docListEl.appendChild(li);
-                });
-            }
+                    }
+                    saveAll();
+                    renderDocList();
+                }
+            });
+            actions.appendChild(renameBtn);
+            actions.appendChild(deleteBtn);
+            li.appendChild(nameSpan);
+            li.appendChild(actions);
+            docListEl.appendChild(li);
+        });
+    }
 
-            function createNewDoc(name) {
+    function createNewDoc(name) {
+        const newDoc = {
+            id: 'doc_' + Date.now(),
+            name: name,
+            root: createNode('中心主题')
+        };
+        docs.push(newDoc);
+        currentDocId = newDoc.id;
+        selectedId = null;
+        currentFocusNodeId = null;
+        focusStack = [];
+        buildNodeMap();
+        resetView();
+        saveAll();
+    }
+
+    document.getElementById('doc-create-inline').addEventListener('click', () => {
+        const nameInput = document.getElementById('new-doc-name');
+        const name = nameInput.value.trim();
+        if (!name) {
+            alert('请输入文档名称');
+            return;
+        }
+        createNewDoc(name);
+        nameInput.value = '';
+        renderDocList();
+    });
+
+    document.getElementById('doc-close').addEventListener('click', () => modalDocs.classList.remove('show'));
+
+    // 导出JSON
+    document.getElementById('doc-export-json').addEventListener('click', () => {
+        const doc = getCurrentDoc();
+        if (!doc) { alert('没有可导出的文档'); return; }
+        const data = JSON.stringify({name: doc.name, root: serializeNode(doc.root)}, null, 2);
+        const blob = new Blob([data], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${doc.name}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('doc-import-json').addEventListener('click', () => {
+        document.getElementById('import-json-input').click();
+    });
+    document.getElementById('import-json-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                if (!data.root || !data.name) throw new Error('无效的备份文件');
+                const importedNode = deserializeNode(data.root);
                 const newDoc = {
                     id: 'doc_' + Date.now(),
-                    name: name,
-                    root: createNode('中心主题')
+                    name: data.name + ' (导入)',
+                    root: importedNode
                 };
                 docs.push(newDoc);
                 currentDocId = newDoc.id;
@@ -691,204 +801,232 @@
                 buildNodeMap();
                 resetView();
                 saveAll();
+                renderDocList();
+                modalDocs.classList.remove('show');
+                alert('导入成功');
+            } catch(err) {
+                alert('导入失败：文件格式不正确');
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // 节点操作
+    function addChildNode() {
+        if (!selectedId || !editMode) return;
+        const parent = getNode(selectedId);
+        if (!parent) return;
+        saveHistory();
+        const newNode = createNode('新节点', parent.id);
+        parent.children.push(newNode);
+        buildNodeMap();
+        selectNode(newNode.id);
+        render();
+        saveAll();
+    }
+    function addSiblingNode() {
+        if (!selectedId || selectedId === getRootNode().id || !editMode) return;
+        const node = getNode(selectedId);
+        if (!node || !node.parentId) return;
+        const parent = getNode(node.parentId);
+        if (!parent) return;
+        saveHistory();
+        const newNode = createNode('新节点', parent.id);
+        const idx = parent.children.indexOf(node);
+        parent.children.splice(idx + 1, 0, newNode);
+        buildNodeMap();
+        selectNode(newNode.id);
+        render();
+        saveAll();
+    }
+    function deleteNode() {
+        if (!selectedId || selectedId === getRootNode().id || !editMode) return;
+        const node = getNode(selectedId);
+        if (!node || !node.parentId) return;
+        const parent = getNode(node.parentId);
+        saveHistory();
+        parent.children = parent.children.filter(ch => ch.id !== selectedId);
+        selectedId = null;
+        buildNodeMap();
+        render();
+        saveAll();
+    }
+    function openLink() {
+        if (!selectedId || editMode) return;
+        const node = getNode(selectedId);
+        if (node && node.link) window.open(node.link, '_blank');
+        else alert('此节点没有链接');
+    }
+    function expandAll() {
+        const root = getRootNode();
+        if (!root) return;
+        saveHistory();
+        (function traverse(node) { node.collapsed = false; node.children.forEach(ch => traverse(ch)); })(root);
+        render();
+        saveAll();
+    }
+    function collapseAll() {
+        const root = getRootNode();
+        if (!root) return;
+        saveHistory();
+        (function traverse(node) { if (node.depth > 0) node.collapsed = true; node.children.forEach(ch => traverse(ch)); })(root);
+        render();
+        saveAll();
+    }
+    function resetView() {
+        view.scale = 1;
+        view.panX = window.innerWidth / 2;
+        view.panY = window.innerHeight / 2;
+        render();
+    }
+    function exportToPNG() {
+        let nodes = getVisibleNodes();
+        if (!nodes.length) return;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        nodes.forEach(n => {
+            minX = Math.min(minX, n.x - 70);
+            maxX = Math.max(maxX, n.x + 70);
+            minY = Math.min(minY, n.y - 30);
+            maxY = Math.max(maxY, n.y + 30);
+        });
+        let pad = 80, w = Math.ceil(maxX - minX + pad * 2), h = Math.ceil(maxY - minY + pad * 2);
+        let canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        let ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f7f8fa';
+        ctx.fillRect(0, 0, w, h);
+        let offX = -minX + pad, offY = -minY + pad;
+        nodes.forEach(n => {
+            if (n.depth > 0 && n.parentId) {
+                let p = getNode(n.parentId);
+                if (!p) return;
+                ctx.beginPath();
+                ctx.moveTo(p.x + offX, p.y + offY);
+                ctx.bezierCurveTo((p.x + n.x) / 2 + offX, p.y + offY, (p.x + n.x) / 2 + offX, n.y + offY, n.x + offX, n.y + offY);
+                ctx.strokeStyle = '#b8c9dd';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        });
+        nodes.forEach(n => {
+            let x = n.x + offX, y = n.y + offY;
+            const fs = n.depth === 0 ? 16 : 14;
+            ctx.font = `600 ${fs}px sans-serif`;
+            let tw = ctx.measureText(n.text).width;
+            let bw = Math.max(tw + 32, 56);
+            let bh = n.depth === 0 ? 42 : 34;
+            let r = n.depth === 0 ? 12 : 8;
+            ctx.fillStyle = n.depth === 0 ? '#5b8ff9' : (n.color || '#fff');
+            ctx.beginPath();
+            ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, r);
+            ctx.fill();
+            ctx.strokeStyle = n.depth === 0 ? '#2f5fc9' : '#d0d5dd';
+            ctx.stroke();
+            ctx.fillStyle = n.depth === 0 ? '#fff' : '#2c3e50';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(n.text, x, y);
+        });
+        let link = document.createElement('a');
+        link.download = '思维导图.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+            this.moveTo(x + r, y);
+            this.arcTo(x + w, y, x + w, y + h, r);
+            this.arcTo(x + w, y + h, x, y + h, r);
+            this.arcTo(x, y + h, x, y, r);
+            this.arcTo(x, y, x + w, y, r);
+            this.closePath();
+            return this;
+        };
+    }            // ==================== 新增功能：搜索 ====================
+            const modalSearch = document.getElementById('modal-search');
+            const searchInput = document.getElementById('search-input');
+            const searchResults = document.getElementById('search-results');
+
+            function showSearchModal() {
+                searchInput.value = '';
+                searchResults.innerHTML = '';
+                modalSearch.classList.add('show');
+                searchInput.focus();
             }
 
-            document.getElementById('doc-create-inline').addEventListener('click', () => {
-                const nameInput = document.getElementById('new-doc-name');
-                const name = nameInput.value.trim();
-                if (!name) {
-                    alert('请输入文档名称');
-                    return;
+            searchInput.addEventListener('input', () => {
+                const keyword = searchInput.value.trim().toLowerCase();
+                if (!keyword) { searchResults.innerHTML = ''; return; }
+                const allNodes = [];
+                (function traverse(node) {
+                    allNodes.push(node);
+                    node.children.forEach(traverse);
+                })(getRootNode() || createNode(''));
+                const matches = allNodes.filter(n => n.text.toLowerCase().includes(keyword));
+                if (matches.length === 0) {
+                    searchResults.innerHTML = '<p style="color:#999;">没有匹配节点</p>';
+                } else {
+                    searchResults.innerHTML = '';
+                    matches.slice(0, 50).forEach(node => {
+                        const div = document.createElement('div');
+                        div.style.padding = '8px';
+                        div.style.borderBottom = '1px solid #eee';
+                        div.style.cursor = 'pointer';
+                        div.textContent = node.text;
+                        div.addEventListener('click', () => {
+                            // 跳转到该节点（选中并平移到屏幕中心）
+                            selectNode(node.id);
+                            view.panX = window.innerWidth / 2 - node.x * view.scale;
+                            view.panY = window.innerHeight / 2 - node.y * view.scale;
+                            render();
+                            modalSearch.classList.remove('show');
+                        });
+                        searchResults.appendChild(div);
+                    });
                 }
-                createNewDoc(name);
-                nameInput.value = '';
-                renderDocList();
             });
 
-            document.getElementById('doc-close').addEventListener('click', () => modalDocs.classList.remove('show'));
+            document.getElementById('search-close').addEventListener('click', () => modalSearch.classList.remove('show'));
 
-            // 导出JSON
-            document.getElementById('doc-export-json').addEventListener('click', () => {
-                const doc = getCurrentDoc();
-                if (!doc) { alert('没有可导出的文档'); return; }
-                const data = JSON.stringify({name: doc.name, root: serializeNode(doc.root)}, null, 2);
-                const blob = new Blob([data], {type: 'application/json'});
+            // ==================== 新增功能：备注弹窗 ====================
+            const notePopup = document.getElementById('note-popup');
+            function showNotePopup(node, clientX, clientY) {
+                notePopup.textContent = node.note;
+                notePopup.style.display = 'block';
+                // 定位在点击位置附近
+                notePopup.style.left = (clientX + 10) + 'px';
+                notePopup.style.top = (clientY + 10) + 'px';
+                // 3秒后自动隐藏
+                clearTimeout(notePopup._timeout);
+                notePopup._timeout = setTimeout(() => { notePopup.style.display = 'none'; }, 3000);
+            }
+            document.addEventListener('click', (e) => {
+                if (!notePopup.contains(e.target)) {
+                    notePopup.style.display = 'none';
+                }
+            });
+
+            // ==================== 新增功能：导出Markdown ====================
+            function exportToMarkdown() {
+                const root = getRootNode();
+                if (!root) { alert('没有内容'); return; }
+                let md = '';
+                function traverse(node, level) {
+                    md += '  '.repeat(level) + '- ' + node.text + '\n';
+                    if (node.note) md += '  '.repeat(level+1) + '> ' + node.note + '\n';
+                    node.children.forEach(ch => traverse(ch, level+1));
+                }
+                traverse(root, 0);
+                const blob = new Blob([md], {type: 'text/markdown'});
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${doc.name}.json`;
+                a.download = `${getCurrentDoc()?.name || '思维导图'}.md`;
                 a.click();
                 URL.revokeObjectURL(url);
-            });
-
-            // 导入JSON
-            document.getElementById('doc-import-json').addEventListener('click', () => {
-                document.getElementById('import-json-input').click();
-            });
-            document.getElementById('import-json-input').addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try {
-                        const data = JSON.parse(ev.target.result);
-                        if (!data.root || !data.name) throw new Error('无效的备份文件');
-                        const importedNode = deserializeNode(data.root);
-                        const newDoc = {
-                            id: 'doc_' + Date.now(),
-                            name: data.name + ' (导入)',
-                            root: importedNode
-                        };
-                        docs.push(newDoc);
-                        currentDocId = newDoc.id;
-                        selectedId = null;
-                        currentFocusNodeId = null;
-                        focusStack = [];
-                        buildNodeMap();
-                        resetView();
-                        saveAll();
-                        renderDocList();
-                        modalDocs.classList.remove('show');
-                        alert('导入成功');
-                    } catch(err) {
-                        alert('导入失败：文件格式不正确');
-                    }
-                };
-                reader.readAsText(file);
-            });
-
-            function addChildNode() {
-                if (!selectedId || !editMode) return;
-                const parent = getNode(selectedId);
-                if (!parent) return;
-                saveHistory();
-                const newNode = createNode('新节点', parent.id);
-                parent.children.push(newNode);
-                buildNodeMap();
-                selectNode(newNode.id);
-                render();
-                saveAll();
-            }
-            function addSiblingNode() {
-                if (!selectedId || selectedId === getRootNode().id || !editMode) return;
-                const node = getNode(selectedId);
-                if (!node || !node.parentId) return;
-                const parent = getNode(node.parentId);
-                if (!parent) return;
-                saveHistory();
-                const newNode = createNode('新节点', parent.id);
-                const idx = parent.children.indexOf(node);
-                parent.children.splice(idx + 1, 0, newNode);
-                buildNodeMap();
-                selectNode(newNode.id);
-                render();
-                saveAll();
-            }
-            function deleteNode() {
-                if (!selectedId || selectedId === getRootNode().id || !editMode) return;
-                const node = getNode(selectedId);
-                if (!node || !node.parentId) return;
-                const parent = getNode(node.parentId);
-                saveHistory();
-                parent.children = parent.children.filter(ch => ch.id !== selectedId);
-                selectedId = null;
-                buildNodeMap();
-                render();
-                saveAll();
-            }
-            function openLink() {
-                if (!selectedId || editMode) return;
-                const node = getNode(selectedId);
-                if (node && node.link) window.open(node.link, '_blank');
-                else alert('此节点没有链接');
-            }
-            function expandAll() {
-                const root = getRootNode();
-                if (!root) return;
-                saveHistory();
-                (function traverse(node) { node.collapsed = false; node.children.forEach(ch => traverse(ch)); })(root);
-                render();
-                saveAll();
-            }
-            function collapseAll() {
-                const root = getRootNode();
-                if (!root) return;
-                saveHistory();
-                (function traverse(node) { if (node.depth > 0) node.collapsed = true; node.children.forEach(ch => traverse(ch)); })(root);
-                render();
-                saveAll();
-            }
-            function resetView() {
-                view.scale = 1;
-                view.panX = window.innerWidth / 2;
-                view.panY = window.innerHeight / 2;
-                render();
-            }
-            function exportToPNG() {
-                let nodes = getVisibleNodes();
-                if (!nodes.length) return;
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                nodes.forEach(n => {
-                    minX = Math.min(minX, n.x - 70);
-                    maxX = Math.max(maxX, n.x + 70);
-                    minY = Math.min(minY, n.y - 30);
-                    maxY = Math.max(maxY, n.y + 30);
-                });
-                let pad = 80, w = Math.ceil(maxX - minX + pad * 2), h = Math.ceil(maxY - minY + pad * 2);
-                let canvas = document.createElement('canvas');
-                canvas.width = w; canvas.height = h;
-                let ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#f7f8fa';
-                ctx.fillRect(0, 0, w, h);
-                let offX = -minX + pad, offY = -minY + pad;
-                nodes.forEach(n => {
-                    if (n.depth > 0 && n.parentId) {
-                        let p = getNode(n.parentId);
-                        if (!p) return;
-                        ctx.beginPath();
-                        ctx.moveTo(p.x + offX, p.y + offY);
-                        ctx.bezierCurveTo((p.x + n.x) / 2 + offX, p.y + offY, (p.x + n.x) / 2 + offX, n.y + offY, n.x + offX, n.y + offY);
-                        ctx.strokeStyle = '#b8c9dd';
-                        ctx.lineWidth = 1.5;
-                        ctx.stroke();
-                    }
-                });
-                nodes.forEach(n => {
-                    let x = n.x + offX, y = n.y + offY;
-                    const fs = n.depth === 0 ? 16 : 14;
-                    ctx.font = `600 ${fs}px sans-serif`;
-                    let tw = ctx.measureText(n.text).width;
-                    let bw = Math.max(tw + 32, 56);
-                    let bh = n.depth === 0 ? 42 : 34;
-                    let r = n.depth === 0 ? 12 : 8;
-                    ctx.fillStyle = n.depth === 0 ? '#5b8ff9' : '#fff';
-                    ctx.beginPath();
-                    ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, r);
-                    ctx.fill();
-                    ctx.strokeStyle = n.depth === 0 ? '#2f5fc9' : '#d0d5dd';
-                    ctx.stroke();
-                    ctx.fillStyle = n.depth === 0 ? '#fff' : '#2c3e50';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(n.text, x, y);
-                });
-                let link = document.createElement('a');
-                link.download = '思维导图.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            }
-            if (!CanvasRenderingContext2D.prototype.roundRect) {
-                CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-                    this.moveTo(x + r, y);
-                    this.arcTo(x + w, y, x + w, y + h, r);
-                    this.arcTo(x + w, y + h, x, y + h, r);
-                    this.arcTo(x, y + h, x, y, r);
-                    this.arcTo(x, y, x + w, y, r);
-                    this.closePath();
-                    return this;
-                };
             }
 
+            // ==================== 工具栏事件统一分发 ====================
             document.querySelectorAll('.toolbar-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const action = btn.dataset.action;
@@ -904,9 +1042,11 @@
                     else if (action === 'expand-all') expandAll();
                     else if (action === 'collapse-all') collapseAll();
                     else if (action === 'export-png') exportToPNG();
+                    else if (action === 'export-md') exportToMarkdown();
                     else if (action === 'reset-view') resetView();
                     else if (action === 'focus' && selectedId) focusNode(selectedId);
                     else if (action === 'unfocus') unfocusNode();
+                    else if (action === 'search') showSearchModal();
                 });
             });
 
@@ -922,7 +1062,6 @@
                 }
                 buildNodeMap();
                 resetView();
-                // 初始化历史记录
                 saveHistory();
             }
 
