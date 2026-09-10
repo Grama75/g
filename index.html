@@ -90,6 +90,7 @@
         .free-textbox .tb-move{position:absolute;left:-10px;top:-10px;width:22px;height:22px;border-radius:50%;background:#5b8ff9;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:move;border:2px solid #fff;z-index:3;transform:scale(var(--inv-scale,1));transform-origin:bottom right;user-select:none}
         .free-textbox .tb-del{position:absolute;right:-10px;top:-10px;width:22px;height:22px;border-radius:50%;background:#e74c3c;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #fff;z-index:3;transform:scale(var(--inv-scale,1));transform-origin:bottom left;user-select:none}
         .free-textbox .tb-resize{position:absolute;right:-10px;bottom:-10px;width:20px;height:20px;background:#a0522d;border:2px solid #fff;border-radius:50%;cursor:nwse-resize;z-index:3;transform:scale(var(--inv-scale,1));transform-origin:top left;user-select:none}
+        #note-manage-list > div{cursor:default}
     </style>
 </head>
 <body>
@@ -155,6 +156,31 @@
             </div>
         </div>
     </div>
+    <div id="modal-note" class="modal-overlay">
+        <div class="modal-box">
+            <h3>笔记管理</h3>
+            <div id="note-manage-list" style="max-height:300px;overflow-y:auto;margin-bottom:10px;"></div>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                <input type="text" id="new-note-name" placeholder="新笔记名称" style="flex:1;margin:0;">
+                <button class="modal-btn primary" id="note-create-btn" style="margin:0;white-space:nowrap;">新建</button>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn primary" id="note-modal-close">关闭</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-color" class="modal-overlay">
+        <div class="modal-box" style="max-width:300px;">
+            <h3>选择划线颜色</h3>
+            <button class="modal-btn" data-color="red" style="width:100%;margin-bottom:8px;border-left:6px solid #e74c3c;justify-content:flex-start;">红线</button>
+            <button class="modal-btn" data-color="black" style="width:100%;margin-bottom:8px;border-left:6px solid #2c3e50;justify-content:flex-start;">黑线</button>
+            <button class="modal-btn" data-color="blue" style="width:100%;margin-bottom:8px;border-left:6px solid #3498db;justify-content:flex-start;">蓝线</button>
+            <button class="modal-btn" data-color="none" style="width:100%;margin-bottom:8px;border-left:6px solid #ccc;justify-content:flex-start;">清除划线</button>
+            <div class="modal-actions">
+                <button class="modal-btn primary" id="color-modal-close">关闭</button>
+            </div>
+        </div>
+    </div>
     <div id="context-menu"></div>
     <div id="note-popup"></div>
     <script>(function(){
@@ -173,6 +199,8 @@
     var renderScheduled = false;
     var saveTimer = null;
     var focusStack = [];
+    var currentUnderlineColor = 'red';
+    var underlineClickTimer = null;
     var STORAGE = 'mindmap_v3';
     var OLD_KEYS = ['mindmap_docs_v2', 'mindmap_docs_v3', 'mindmap_data_v1', 'mindmap_data', 'mindmap'];
 
@@ -467,7 +495,7 @@
                             div.style.left = s2.x + 'px';
                             div.style.top = s2.y + 'px';
                         }
-                        function onUp(){ document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); div.style.zIndex = ''; saveAll(); }
+                        function onUp(){ document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); div.style.zIndex = ''; saveHistory(); saveAll(); }
                         document.addEventListener('pointermove', onMove);
                         document.addEventListener('pointerup', onUp);
                     });
@@ -479,6 +507,7 @@
                     del.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
                     del.addEventListener('click', function(e){
                         e.stopPropagation();
+                        saveHistory();
                         noteMode.textboxes = noteMode.textboxes.filter(function(x){ return x.id !== tb.id; });
                         render(); saveAll();
                     });
@@ -497,7 +526,7 @@
                             div.style.width = tb.w+'px';
                             div.style.height = tb.h+'px';
                         }
-                        function onUp(){ document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); div.style.zIndex = ''; saveAll(); }
+                        function onUp(){ document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); div.style.zIndex = ''; saveHistory(); saveAll(); }
                         document.addEventListener('pointermove', onMove);
                         document.addEventListener('pointerup', onUp);
                     });
@@ -526,6 +555,7 @@
                             tb.text = content.textContent.trim() || '双击编辑';
                             content.contentEditable = 'false';
                             content.style.userSelect = 'none';
+                            saveHistory();
                             saveAll();
                         }
                     });
@@ -543,7 +573,7 @@
 
     function saveHistory() {
         var doc = getCurrentDoc(); if (!doc) return;
-        var snap = JSON.stringify(doc.root);
+        var snap = JSON.stringify({root: doc.root, note: noteMode});
         if (historyIndex < history.length-1) history = history.slice(0, historyIndex+1);
         history.push(snap);
         if (history.length>50) history.shift();
@@ -553,13 +583,27 @@
         if (historyIndex <= 0) return;
         historyIndex--;
         var d = getCurrentDoc();
-        if (d) { d.root = JSON.parse(history[historyIndex]); buildNodeMap(); selectedId = null; render(); saveAll(); updateToolbar(); }
+        if (d) {
+            var s = JSON.parse(history[historyIndex]);
+            d.root = s.root;
+            noteMode = s.note;
+            buildNodeMap();
+            selectedId = null;
+            render(); saveAll(); updateToolbar();
+        }
     }
     function redo() {
         if (historyIndex >= history.length-1) return;
         historyIndex++;
         var d = getCurrentDoc();
-        if (d) { d.root = JSON.parse(history[historyIndex]); buildNodeMap(); selectedId = null; render(); saveAll(); updateToolbar(); }
+        if (d) {
+            var s = JSON.parse(history[historyIndex]);
+            d.root = s.root;
+            noteMode = s.note;
+            buildNodeMap();
+            selectedId = null;
+            render(); saveAll(); updateToolbar();
+        }
     }
 
     function addChild() {
@@ -711,42 +755,110 @@ document.getElementById('note-toolbar').addEventListener('click', function(e){
     if (a === 'undo') { undo(); return; }
     if (a === 'redo') { redo(); return; }
     if (a === 'note-manage') {
-        var list = noteMode.notes.map(function(n,i){ return (i+1)+'. '+n.name; }).join('\n');
-        var c = prompt('笔记列表（输入序号切换，输入 0 新建，输入 -1 删除当前）:\n' + list);
-        if (c === null) return;
-        var num = parseInt(c);
-        if (num === 0) {
-            var name = prompt('新笔记名称','笔记'+(noteMode.notes.length+1));
-            if (name && name.trim()) { var id='nt'+Date.now(); noteMode.notes.push({id:id, name:name.trim()}); noteMode.activeNoteId = id; render(); }
-        } else if (num === -1) {
-            if (noteMode.notes.length <= 1) { alert('至少保留一个笔记'); return; }
-            if (!confirm('删除当前笔记及其所有标注？')) return;
-            var curId = noteMode.activeNoteId;
-            noteMode.notes = noteMode.notes.filter(function(n){ return n.id !== curId; });
-            noteMode.textboxes = noteMode.textboxes.filter(function(t){ return t.noteId !== curId; });
-            noteMode.activeNoteId = noteMode.notes[0].id;
-            render();
-        } else if (noteMode.notes[num-1]) { noteMode.activeNoteId = noteMode.notes[num-1].id; render(); }
+        renderNoteManageList();
+        document.getElementById('modal-note').classList.add('show');
+        return;
     }
-    else if (a === 'add-textbox') {
+    if (a === 'underline') {
+        if (underlineClickTimer) {
+            clearTimeout(underlineClickTimer);
+            underlineClickTimer = null;
+            document.getElementById('modal-color').classList.add('show');
+        } else {
+            underlineClickTimer = setTimeout(function() {
+                underlineClickTimer = null;
+                if (!selectedId) { alert('请先点击要划线的节点'); return; }
+                saveHistory();
+                if (currentUnderlineColor === 'none') {
+                    delete noteMode.underlines[selectedId];
+                } else {
+                    noteMode.underlines[selectedId] = currentUnderlineColor;
+                }
+                render(); saveAll();
+            }, 250);
+        }
+        return;
+    }
+    if (a === 'add-textbox') {
         var cx = (window.innerWidth/2 - view.panX) / view.scale;
         var cy = (window.innerHeight/2 - view.panY) / view.scale + 50;
+        saveHistory();
         var tb = {id:'tb'+Date.now(), noteId:noteMode.activeNoteId, x:cx, y:cy, w:150, h:60, text:'双击编辑', highlight:true};
         noteMode.textboxes.push(tb);
         render();
         setTimeout(function(){ tb.highlight = false; render(); }, 2000);
+        saveAll();
     }
-    else if (a === 'underline') {
-        if (!selectedId) { alert('请先点击要划线的节点'); return; }
-        var c2 = prompt('选择划线颜色：\n1. 红线\n2. 黑线\n3. 蓝线\n4. 清除划线');
-        if (c2 === null) return;
-        if (c2 === '1') noteMode.underlines[selectedId] = 'red';
-        else if (c2 === '2') noteMode.underlines[selectedId] = 'black';
-        else if (c2 === '3') noteMode.underlines[selectedId] = 'blue';
-        else if (c2 === '4') delete noteMode.underlines[selectedId];
-        render();
-    }
-    else if (a === 'reset-layout') { noteMode.nodePositions = {}; render(); }
+    else if (a === 'reset-layout') { saveHistory(); noteMode.nodePositions = {}; render(); saveAll(); }
+});
+
+// 颜色弹窗
+document.getElementById('modal-color').addEventListener('click', function(e){
+    var btn = e.target.closest('.modal-btn[data-color]');
+    if (!btn) return;
+    currentUnderlineColor = btn.dataset.color;
+    document.getElementById('modal-color').classList.remove('show');
+});
+document.getElementById('color-modal-close').addEventListener('click', function(){
+    document.getElementById('modal-color').classList.remove('show');
+});
+
+// Note 管理弹窗
+function renderNoteManageList() {
+    var list = document.getElementById('note-manage-list');
+    list.innerHTML = '';
+    noteMode.notes.forEach(function(n) {
+        var div = document.createElement('div');
+        var active = n.id === noteMode.activeNoteId;
+        div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #e0dcd5;border-radius:8px;margin-bottom:6px;' + (active ? 'background:#e8f0fe;border-color:#5b8ff9;' : '');
+        var name = document.createElement('span');
+        name.style.cssText = 'flex:1;cursor:pointer;font-size:14px;color:#4a3f35;' + (active ? 'font-weight:600;' : '');
+        name.textContent = n.name + (active ? ' ✓' : '');
+        name.addEventListener('click', function() {
+            noteMode.activeNoteId = n.id;
+            document.getElementById('modal-note').classList.remove('show');
+            render();
+        });
+        var renameBtn = document.createElement('button');
+        renameBtn.className = 'modal-btn';
+        renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;';
+        renameBtn.textContent = '改名';
+        renameBtn.addEventListener('click', function() {
+            var newName = prompt('新名称', n.name);
+            if (newName && newName.trim()) { n.name = newName.trim(); renderNoteManageList(); }
+        });
+        var delBtn = document.createElement('button');
+        delBtn.className = 'modal-btn';
+        delBtn.style.cssText = 'padding:4px 8px;font-size:12px;color:#e74c3c;';
+        delBtn.textContent = '删除';
+        delBtn.addEventListener('click', function() {
+            if (noteMode.notes.length <= 1) { alert('至少保留一个笔记'); return; }
+            if (!confirm('删除该笔记及其所有标注？')) return;
+            noteMode.notes = noteMode.notes.filter(function(x){ return x.id !== n.id; });
+            noteMode.textboxes = noteMode.textboxes.filter(function(t){ return t.noteId !== n.id; });
+            if (noteMode.activeNoteId === n.id) noteMode.activeNoteId = noteMode.notes[0].id;
+            renderNoteManageList();
+            render();
+        });
+        div.appendChild(name);
+        div.appendChild(renameBtn);
+        div.appendChild(delBtn);
+        list.appendChild(div);
+    });
+}
+document.getElementById('note-create-btn').addEventListener('click', function() {
+    var input = document.getElementById('new-note-name');
+    var name = input.value.trim();
+    if (!name) { alert('请输入名称'); return; }
+    var id = 'nt' + Date.now();
+    noteMode.notes.push({id: id, name: name});
+    noteMode.activeNoteId = id;
+    input.value = '';
+    renderNoteManageList();
+    render();
+});
+document.getElementById('note-modal-close').addEventListener('click', function() {
+    document.getElementById('modal-note').classList.remove('show');
 });
 
 var ptr=null, sx,sy, spx,spy, drag=false, moved=false;
@@ -797,7 +909,7 @@ container.addEventListener('pointermove',function(e){
 container.addEventListener('pointerup',function(e){
     if(e.pointerId!==ptr)return;
     if (draggingNodeId) {
-        if (moved) saveAll();
+        if (moved) { saveHistory(); saveAll(); }
         draggingNodeId = null;
     } else if(!moved && !e.target.closest('.node-box')) {
         selectNode(null);
@@ -894,7 +1006,7 @@ document.getElementById('mode-switcher').addEventListener('click',function(e){
         doc.updatedAt = Date.now();
         document.getElementById('edit-doc-name').textContent = doc.name;
         buildNodeMap();
-        history = [JSON.stringify(doc.root)];
+        history = [JSON.stringify({root: doc.root, note: noteMode})];
         historyIndex = 0;
         currentMode = 'create';
         lastToolbarKey = '';
