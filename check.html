@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据检查</title>
+<style>
+body{font-family:-apple-system,sans-serif;padding:16px;background:#f5f0e6;color:#4a3f35;font-size:14px;line-height:1.6}
+h2{font-size:16px;margin-bottom:12px}
+.item{background:#fff;border-radius:8px;padding:10px;margin-bottom:8px;word-break:break-all}
+.key{font-weight:700;color:#a0522d}
+.len{font-size:12px;color:#8b7d6b}
+.empty{color:#e74c3c;font-weight:700}
+</style>
+</head>
+<body>
+<h2>📦 localStorage 数据检查</h2>
+<div id="result">正在读取...</div>
+<script>
+(function(){
+    var r = document.getElementById('result');
+    var html = '';
+    var count = 0;
+    try {
+        // 显示当前页面的来源
+        html += '<div class="item"><b>当前页面地址：</b><br>' + location.href + '</div>';
+        html += '<div class="item"><b>存储源(origin)：</b><br>' + location.origin + '</div>';
+
+        if (localStorage.length === 0) {
+            html += '<div class="item empty">⚠️ localStorage 完全为空，没有任何数据</div>';
+        } else {
+            html += '<div class="item"><b>共找到 ' + localStorage.length + ' 个键：</b></div>';
+            for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                var v = localStorage.getItem(k) || '';
+                count++;
+                var isMind = (k.indexOf('mindmap') >= 0 || k.indexOf('导图') >= 0 || k.indexOf('思维') >= 0);
+                html += '<div class="item" style="border-left:4px solid ' + (isMind ? '#a0522d' : '#ccc') + '">';
+                html += '<div class="key">' + (isMind ? '⭐ ' : '') + k + '</div>';
+                html += '<div class="len">长度：' + v.length + ' 字符</div>';
+                html += '<div style="font-size:12px;color:#666;margin-top:4px;max-height:80px;overflow:hidden;">' + 
+                        v.substring(0, 200).replace(/</g,'&lt;') + (v.length>200?'...':'') + '</div>';
+                html += '</div>';
+            }
+        }
+    } catch(e) {
+        html += '<div class="item empty">读取出错：' + e.message + '</div>';
+    }
+    r.innerHTML = html;
+})();
+</script>
+</body>
+</html>
