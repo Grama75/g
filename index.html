@@ -216,28 +216,75 @@
     }
 
     function loadAll() {
-        // 1. 尝试读取新版存储
-        try {
-            const raw = localStorage.getItem(STORAGE);
-            if (raw) {
-                const d = JSON.parse(raw);
-                docs = (d.docs||[]).map(x => ({id:x.id, name:x.name, root:deserializeNode(x.root), folderId:x.folderId, updatedAt:x.updatedAt}));
+    // 1. 尝试读取新版存储
+    try {
+        const raw = localStorage.getItem(STORAGE);
+        if (raw) {
+            const d = JSON.parse(raw);
+            if (d.docs && d.docs.length > 0) {
+                docs = d.docs.map(x => ({id:x.id, name:x.name, root:deserializeNode(x.root), folderId:x.folderId, updatedAt:x.updatedAt}));
                 folders = d.folders||[];
                 quotes = d.quotes||[];
                 currentDocId = d.currentDocId||null;
+                console.log('从新版存储读取', docs.length, '个文档');
                 return true;
             }
-        } catch(e) { console.warn('新版读取失败', e); }
+        }
+    } catch(e) { console.warn('新版读取失败', e); }
 
-        // 2. 兼容旧版存储（mindmap_docs_v2），自动迁移
+    // 2. 尝试所有已知旧键名
+    const oldKeys = ['mindmap_docs_v2', 'mindmap_docs_v3', 'mindmap_data_v1', 'mindmap_data', 'mindmap'];
+    for (const key of oldKeys) {
         try {
-            const oldRaw = localStorage.getItem(OLD_STORAGE);
-            if (oldRaw) {
-                const od = JSON.parse(oldRaw);
-                if (od.docs && od.docs.length > 0) {
-                    docs = od.docs.map(x => ({
-                        id: x.id,
-                        name: x.name,
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const od = JSON.parse(raw);
+            let oldDocs = null;
+            if (od.docs && od.docs.length > 0) oldDocs = od.docs;
+            else if (Array.isArray(od) && od.length > 0 && od[0].root) oldDocs = od;
+
+            if (oldDocs) {
+                docs = oldDocs.map(x => ({
+                    id: x.id || ('d'+Date.now()+Math.random()),
+                    name: x.name || '未命名导图',
+                    root: deserializeNode(x.root),
+                    folderId: null,
+                    updatedAt: Date.now()
+                }));
+                folders = [];
+                quotes = [];
+                currentDocId = od.currentDocId || docs[0].id;
+                // 迁移到新版
+                const data = {
+                    docs: docs.map(d => ({id:d.id, name:d.name, root:serializeNode(d.root), folderId:null, updatedAt:d.updatedAt})),
+                    folders, quotes, currentDocId
+                };
+                localStorage.setItem(STORAGE, JSON.stringify(data));
+                setTimeout(()=>{ alert('从「' + key + '」恢复了 ' + docs.length + ' 张导图'); }, 300);
+                console.log('从旧键恢复:', key, docs.length);
+                return true;
+            }
+        } catch(e) { console.warn('读取旧键失败:', key, e); }
+    }
+
+    // 3. 最后手段：扫描所有含 mindmap 的键
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key || (!key.includes('mindmap') && !key.includes('导图') && !key.includes('思维'))) continue;
+            if (key === STORAGE) continue;
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw || raw.length < 10) continue;
+                const od = JSON.parse(raw);
+                let oldDocs = null;
+                if (od && od.docs && od.docs.length > 0) oldDocs = od.docs;
+                else if (Array.isArray(od) && od.length > 0 && od[0] && od[0].root) oldDocs = od;
+
+                if (oldDocs) {
+                    docs = oldDocs.map(x => ({
+                        id: x.id || ('d'+Date.now()+Math.random()),
+                        name: x.name || '未命名导图',
                         root: deserializeNode(x.root),
                         folderId: null,
                         updatedAt: Date.now()
@@ -245,19 +292,21 @@
                     folders = [];
                     quotes = [];
                     currentDocId = od.currentDocId || docs[0].id;
-                    // 迁移到新版
                     const data = {
                         docs: docs.map(d => ({id:d.id, name:d.name, root:serializeNode(d.root), folderId:null, updatedAt:d.updatedAt})),
                         folders, quotes, currentDocId
                     };
                     localStorage.setItem(STORAGE, JSON.stringify(data));
-                    setTimeout(()=>{ alert('已恢复之前的 ' + docs.length + ' 张导图'); }, 300);
+                    setTimeout(()=>{ alert('扫描恢复：从「' + key + '」找回 ' + docs.length + ' 张导图'); }, 300);
                     return true;
                 }
-            }
-        } catch(e) { console.warn('旧版读取失败', e); }
+            } catch(e) {}
+        }
+    } catch(e) { console.warn('扫描失败', e); }
 
-        return false;
+    console.log('未找到任何旧数据');
+    return false;
+}
     }
 
     function showSaveHint() {
