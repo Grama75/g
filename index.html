@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>思维导图</title>
+    <title>f思维导图</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
         html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;position:fixed;touch-action:none;background:#f5f0e6}
@@ -207,85 +207,82 @@
     }
 
     function loadAll() {
-        // 1. 新版
-        try {
-            var raw = localStorage.getItem(STORAGE);
-            if (raw) {
-                var d = JSON.parse(raw);
-                if (d.docs && d.docs.length > 0) {
-                    docs = d.docs.map(function(x){ return {id:x.id, name:x.name, root:deserializeNode(x.root), folderId:x.folderId, updatedAt:x.updatedAt}; });
-                    folders = d.folders || [];
-                    quotes = d.quotes || [];
-                    currentDocId = d.currentDocId || null;
-                    console.log('从新版读取', docs.length, '个文档');
-                    return true;
-                }
+    var newData = null;
+    // 1. 读取新版存储
+    try {
+        var raw = localStorage.getItem(STORAGE);
+        if (raw) {
+            var d = JSON.parse(raw);
+            if (d.docs && d.docs.length > 0) {
+                newData = d;
             }
-        } catch(e) { console.warn('新版读取失败', e); }
-
-        // 2. 尝试已知旧键
-        for (var i=0;i<OLD_KEYS.length;i++) {
-            try {
-                var key = OLD_KEYS[i];
-                var oldRaw = localStorage.getItem(key);
-                if (!oldRaw) continue;
-                var od = JSON.parse(oldRaw);
-                var oldDocs = null;
-                if (od.docs && od.docs.length > 0) oldDocs = od.docs;
-                else if (Array.isArray(od) && od.length > 0 && od[0] && od[0].root) oldDocs = od;
-
-                if (oldDocs) {
-                    docs = oldDocs.map(function(x){
-                        return {id: x.id || ('d'+Date.now()+Math.random()), name: x.name || '未命名导图', root: deserializeNode(x.root), folderId: null, updatedAt: Date.now()};
-                    });
-                    folders = [];
-                    quotes = [];
-                    currentDocId = od.currentDocId || docs[0].id;
-                    localStorage.setItem(STORAGE, JSON.stringify({
-                        docs: docs.map(function(d){ return {id:d.id, name:d.name, root:serializeNode(d.root), folderId:null, updatedAt:d.updatedAt}; }),
-                        folders: folders, quotes: quotes, currentDocId: currentDocId
-                    }));
-                    setTimeout(function(){ alert('从「' + key + '」恢复了 ' + docs.length + ' 张导图'); }, 300);
-                    console.log('从旧键恢复:', key, docs.length);
-                    return true;
-                }
-            } catch(e) { console.warn('读取旧键失败:', OLD_KEYS[i], e); }
         }
+    } catch(e) { console.warn('新版读取失败', e); }
 
-        // 3. 扫描所有含 mindmap 的键
-        try {
-            for (var j=0;j<localStorage.length;j++) {
-                var k = localStorage.key(j);
-                if (!k || k === STORAGE) continue;
-                if (k.indexOf('mindmap') < 0 && k.indexOf('导图') < 0 && k.indexOf('思维') < 0) continue;
-                try {
-                    var r = localStorage.getItem(k);
-                    if (!r || r.length < 10) continue;
-                    var od2 = JSON.parse(r);
-                    var oldDocs2 = null;
-                    if (od2 && od2.docs && od2.docs.length > 0) oldDocs2 = od2.docs;
-                    else if (Array.isArray(od2) && od2.length > 0 && od2[0] && od2[0].root) oldDocs2 = od2;
-                    if (oldDocs2) {
-                        docs = oldDocs2.map(function(x){
-                            return {id: x.id || ('d'+Date.now()+Math.random()), name: x.name || '未命名导图', root: deserializeNode(x.root), folderId: null, updatedAt: Date.now()};
-                        });
-                        folders = []; quotes = [];
-                        currentDocId = od2.currentDocId || docs[0].id;
-                        localStorage.setItem(STORAGE, JSON.stringify({
-                            docs: docs.map(function(d){ return {id:d.id, name:d.name, root:serializeNode(d.root), folderId:null, updatedAt:d.updatedAt}; }),
-                            folders: folders, quotes: quotes, currentDocId: currentDocId
-                        }));
-                        setTimeout(function(){ alert('扫描恢复：从「' + k + '」找回 ' + docs.length + ' 张导图'); }, 300);
-                        return true;
-                    }
-                } catch(e) {}
+    // 判断新版是否为"空白默认数据"
+    var isBlank = false;
+    if (newData) {
+        var onlyDoc = newData.docs.length === 1 ? newData.docs[0] : null;
+        if (onlyDoc) {
+            var r = onlyDoc.root;
+            if (r && r.text === '中心主题' && (!r.children || r.children.length === 0)) {
+                isBlank = true;
             }
-        } catch(e) { console.warn('扫描失败', e); }
-
-        console.log('未找到旧数据');
-        return false;
+        }
     }
 
+    // 2. 如果新版有真实数据，直接用
+    if (newData && !isBlank) {
+        docs = newData.docs.map(function(x){ return {id:x.id, name:x.name, root:deserializeNode(x.root), folderId:x.folderId, updatedAt:x.updatedAt}; });
+        folders = newData.folders || [];
+        quotes = newData.quotes || [];
+        currentDocId = newData.currentDocId || null;
+        console.log('从新版读取', docs.length, '个文档');
+        return true;
+    }
+
+    // 3. 新版为空白，尝试读取旧版数据
+    var oldKeys = ['mindmap_docs_v2', 'mindmap_docs_v3', 'mindmap_data_v1', 'mindmap_data', 'mindmap'];
+    for (var i = 0; i < oldKeys.length; i++) {
+        try {
+            var key = oldKeys[i];
+            var oldRaw = localStorage.getItem(key);
+            if (!oldRaw) continue;
+            var od = JSON.parse(oldRaw);
+            var oldDocs = null;
+            if (od.docs && od.docs.length > 0) oldDocs = od.docs;
+            else if (Array.isArray(od) && od.length > 0 && od[0] && od[0].root) oldDocs = od;
+
+            if (oldDocs && oldDocs.length > 0) {
+                docs = oldDocs.map(function(x){
+                    return {id: x.id || ('d'+Date.now()+Math.random()), name: x.name || '未命名导图', root: deserializeNode(x.root), folderId: null, updatedAt: Date.now()};
+                });
+                folders = [];
+                quotes = [];
+                currentDocId = od.currentDocId || docs[0].id;
+                // 迁移到新版
+                localStorage.setItem(STORAGE, JSON.stringify({
+                    docs: docs.map(function(d){ return {id:d.id, name:d.name, root:serializeNode(d.root), folderId:null, updatedAt:d.updatedAt}; }),
+                    folders: folders, quotes: quotes, currentDocId: currentDocId
+                }));
+                setTimeout(function(){ alert('已恢复「' + docs[0].name + '」等 ' + docs.length + ' 张导图'); }, 300);
+                console.log('从旧键恢复:', key, docs.length);
+                return true;
+            }
+        } catch(e) { console.warn('读取旧键失败:', oldKeys[i], e); }
+    }
+
+    // 4. 新版空白，旧版也没有，就用新版空白数据
+    if (newData) {
+        docs = newData.docs.map(function(x){ return {id:x.id, name:x.name, root:deserializeNode(x.root), folderId:x.folderId, updatedAt:x.updatedAt}; });
+        folders = newData.folders || [];
+        quotes = newData.quotes || [];
+        currentDocId = newData.currentDocId || null;
+        return true;
+    }
+
+    return false;
+}
     function showSaveHint() {
         var h = document.getElementById('save-hint');
         if (!h) return;
