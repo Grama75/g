@@ -9,18 +9,15 @@
         html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;position:fixed;touch-action:none;background:#f5f0e6}
         .page{position:absolute;inset:0;display:none;flex-direction:column}
         .page.active{display:flex}
-        /* 主页 */
         #home-page{justify-content:center;align-items:center;background:#f5f0e6}
         #quote-container{text-align:center;padding:0 30px;max-width:600px;width:100%}
         #quote-text{font-family:Georgia,'Times New Roman','宋体',serif;font-size:22px;color:#4a3f35;line-height:1.6;margin-bottom:5px}
         #quote-author{font-size:15px;color:#8b7d6b;text-align:right;font-style:italic}
         #create-btn{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);width:90px;height:90px;border-radius:50%;background:#a0522d;color:#fff;font-size:16px;font-weight:600;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.15);cursor:pointer;letter-spacing:1px;z-index:5}
-        /* 底部导航 */
         #bottom-nav{position:fixed;bottom:0;left:0;right:0;height:60px;background:#fff;border-top:1px solid #e0dcd5;display:flex;z-index:100}
         .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;cursor:pointer;color:#8b7d6b}
         .nav-item.active{color:#a0522d}
         .nav-item .nav-label{font-size:10px;margin-top:2px}
-        /* 仓库页 */
         #repo-page{background:#f5f0e6}
         .page-topbar{height:56px;background:#fff;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid #e0dcd5;gap:8px}
         .search-input{flex:1;border:1.5px solid #e0dcd5;border-radius:20px;padding:8px 14px;font-size:14px;outline:none;background:#f9f7f3;color:#4a3f35}
@@ -31,7 +28,6 @@
         .doc-card-footer{display:flex;align-items:center;padding:8px 10px;gap:4px}
         .doc-card-name{flex:1;font-size:13px;color:#4a3f35;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .doc-more{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#8b7d6b;cursor:pointer}
-        /* 文件夹页 */
         #folder-page{background:#f5f0e6}
         #folder-list{flex:1;overflow-y:auto;padding:12px}
         .folder-item{background:#fff;border-radius:10px;margin-bottom:8px;overflow:hidden;border:1px solid #e0dcd5}
@@ -43,14 +39,12 @@
         .folder-content{display:none;padding:0 12px 12px}
         .folder-content.open{display:block}
         .folder-doc{display:flex;align-items:center;padding:8px;font-size:14px;color:#4a3f35;border-bottom:1px solid #f0ece4;cursor:pointer}
-        /* 名言编辑页 */
         #quote-edit-page{background:#f5f0e6}
         #quote-list{flex:1;overflow-y:auto;padding:12px}
         .quote-item{background:#fff;border-radius:10px;padding:14px;margin-bottom:8px;border:1px solid #e0dcd5;position:relative}
         .quote-item .qt{font-size:14px;color:#4a3f35;margin-bottom:4px;padding-right:20px}
         .quote-item .qa{font-size:12px;color:#8b7d6b;text-align:right}
         .quote-item .qdel{position:absolute;top:10px;right:10px;color:#e74c3c;font-size:18px;cursor:pointer}
-        /* 编辑画布 */
         #edit-page{background:#f7f8fa}
         #edit-topbar{height:50px;background:#fff;display:flex;align-items:center;padding:0 10px;border-bottom:1px solid #e0dcd5;gap:8px}
         #back-btn{background:none;border:none;font-size:22px;color:#4a3f35;cursor:pointer;padding:4px 8px}
@@ -72,7 +66,6 @@
         .node-box.underline-blue{border-bottom:3px solid #3498db}
         .node-dot{position:absolute;width:14px;height:14px;border-radius:50%;background-color:#b8c4d0;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.18);pointer-events:auto;cursor:pointer;z-index:3;padding:6px;background-clip:content-box}
         .node-dot.active{background-color:#5b8ff9}
-        /* 编辑工具栏两行 */
         #toolbar-container{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.97);border-top:1px solid #e0dcd5;overflow-x:auto;z-index:10}
         #toolbar-inner{display:flex;flex-direction:column;min-width:max-content}
         .toolbar-row{display:flex;gap:4px;padding:4px 8px}
@@ -80,10 +73,8 @@
         .toolbar-row:last-child{padding-top:2px}
         .toolbar-btn{min-width:72px;height:40px;border-radius:10px;border:1px solid #d0d5dd;background:#fff;color:#3a4a5a;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;justify-content:center}
         .toolbar-btn:active{background:#a0522d;color:#fff}
-        /* 笔记工具栏 */
         #note-toolbar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.97);border-top:1px solid #e0dcd5;display:none;padding:8px;gap:6px;overflow-x:auto;z-index:10}
         #note-toolbar.active{display:flex}
-        /* 模态框 */
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
         .modal-overlay.show{display:flex}
         .modal-box{background:#fff;border-radius:16px;padding:18px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;overflow-y:auto}
@@ -93,20 +84,17 @@
         .modal-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap}
         .modal-btn{padding:9px 16px;border-radius:8px;border:1px solid #d0d5dd;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#4a3f35}
         .modal-btn.primary{background:#a0522d;color:#fff;border-color:#a0522d}
-        /* 右键菜单 */
         #context-menu{position:fixed;z-index:300;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);display:none;min-width:120px;overflow:hidden}
         #context-menu .ctx-item{padding:12px 16px;font-size:14px;color:#4a3f35;cursor:pointer;border-bottom:1px solid #f0ece4}
         #context-menu .ctx-item:last-child{border-bottom:none}
         #context-menu .ctx-item:active{background:#f5f0e6}
-        /* 自由文本框 */
         .free-textbox{position:absolute;background:rgba(255,255,255,0.9);border:1.5px dashed #a0522d;border-radius:6px;padding:6px 10px;font-size:13px;color:#4a3f35;cursor:move;pointer-events:auto;z-index:5;min-width:60px}
         .free-textbox .del-btn{position:absolute;top:-8px;right:-8px;width:18px;height:18px;border-radius:50%;background:#e74c3c;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer}
-        /* 备注弹窗 */
         #note-popup{position:fixed;z-index:250;background:#fff;border-radius:10px;padding:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);max-width:260px;display:none;font-size:13px;color:#4a3f35;word-break:break-word}
+        #save-hint{position:fixed;bottom:75px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#fff;padding:4px 12px;border-radius:8px;font-size:12px;z-index:150;display:none;pointer-events:none}
     </style>
 </head>
 <body>
-    <!-- 主页 -->
     <div id="home-page" class="page active">
         <div id="quote-container">
             <div id="quote-text"></div>
@@ -114,8 +102,6 @@
         </div>
         <button id="create-btn">Create</button>
     </div>
-
-    <!-- 仓库页 -->
     <div id="repo-page" class="page">
         <div class="page-topbar">
             <input class="search-input" id="repo-search" placeholder="搜索...">
@@ -123,8 +109,6 @@
         </div>
         <div id="repo-grid"></div>
     </div>
-
-    <!-- 文件夹页 -->
     <div id="folder-page" class="page">
         <div class="page-topbar">
             <span style="font-size:16px;font-weight:600;color:#4a3f35;flex:1;">文件夹</span>
@@ -132,8 +116,6 @@
         </div>
         <div id="folder-list"></div>
     </div>
-
-    <!-- 名言编辑页 -->
     <div id="quote-edit-page" class="page">
         <div class="page-topbar">
             <span style="font-size:16px;font-weight:600;color:#4a3f35;flex:1;">名言管理</span>
@@ -141,8 +123,6 @@
         </div>
         <div id="quote-list"></div>
     </div>
-
-    <!-- 编辑画布 -->
     <div id="edit-page" class="page">
         <div id="edit-topbar">
             <button id="back-btn">←</button>
@@ -157,14 +137,10 @@
         <div id="toolbar-container"><div id="toolbar-inner"></div></div>
         <div id="note-toolbar"></div>
     </div>
-
-    <!-- 底部导航 -->
     <div id="bottom-nav">
         <div class="nav-item active" id="nav-home"><span>📖</span><span class="nav-label">主页</span></div>
         <div class="nav-item" id="nav-repo"><span>🏛</span><span class="nav-label">仓库</span></div>
     </div>
-
-    <!-- 模态框：编辑节点 -->
     <div id="modal-edit" class="modal-overlay">
         <div class="modal-box">
             <h3>编辑节点</h3>
@@ -180,10 +156,9 @@
             </div>
         </div>
     </div>
-
     <div id="context-menu"></div>
     <div id="note-popup"></div>
-
+    <div id="save-hint">已保存</div>
     <script>(function(){
     // ========== 全局状态 ==========
     let docs = [];
@@ -198,7 +173,13 @@
     let history = [], historyIndex = -1;
     let allowAnim = false;
 
+    // 优化：缓存与节流
+    let lastToolbarKey = '';
+    let renderScheduled = false;
+    let saveTimer = null;
+
     const STORAGE = 'mindmap_v3';
+    const OLD_STORAGE = 'mindmap_docs_v2';
 
     // ========== 序列化 ==========
     function serializeNode(n) {
@@ -206,7 +187,11 @@
     }
     function deserializeNode(d, pid) {
         const n = createNode(d.text, pid);
-        n.id = d.id; n.collapsed = d.collapsed||false; n.link = d.link||''; n.color = d.color||''; n.note = d.note||'';
+        n.id = d.id;
+        n.collapsed = d.collapsed||false;
+        n.link = d.link||'';
+        n.color = d.color||'';
+        n.note = d.note||'';
         n.children = (d.children||[]).map(c => deserializeNode(c, n.id));
         return n;
     }
@@ -214,42 +199,91 @@
         return {id:'n'+Date.now()+Math.random().toString(36).substr(2,6), text, parentId:parentId||null, children:[], depth:0, angle:0, sectorStart:0, sectorEnd:360, x:0, y:0, collapsed:false, link:'', color:'', note:''};
     }
 
-    // ========== 存储 ==========
+    // ========== 存储（含旧数据迁移） ==========
     function saveAll() {
-        const data = {
-            docs: docs.map(d => ({id:d.id, name:d.name, root:serializeNode(d.root), folderId:d.folderId||null, updatedAt:d.updatedAt})),
-            folders: folders, quotes: quotes, currentDocId: currentDocId
-        };
-        try { localStorage.setItem(STORAGE, JSON.stringify(data)); showSaveHint(); } catch(e) {}
+        // 优化：防抖，200ms内只写一次
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+            const data = {
+                docs: docs.map(d => ({id:d.id, name:d.name, root:serializeNode(d.root), folderId:d.folderId||null, updatedAt:d.updatedAt})),
+                folders, quotes, currentDocId
+            };
+            try {
+                localStorage.setItem(STORAGE, JSON.stringify(data));
+                showSaveHint();
+            } catch(e) { console.warn('保存失败', e); }
+        }, 200);
     }
+
     function loadAll() {
+        // 1. 尝试读取新版存储
         try {
             const raw = localStorage.getItem(STORAGE);
             if (raw) {
                 const d = JSON.parse(raw);
                 docs = (d.docs||[]).map(x => ({id:x.id, name:x.name, root:deserializeNode(x.root), folderId:x.folderId, updatedAt:x.updatedAt}));
-                folders = d.folders||[]; quotes = d.quotes||[]; currentDocId = d.currentDocId||null;
+                folders = d.folders||[];
+                quotes = d.quotes||[];
+                currentDocId = d.currentDocId||null;
                 return true;
             }
-        } catch(e) {}
+        } catch(e) { console.warn('新版读取失败', e); }
+
+        // 2. 兼容旧版存储（mindmap_docs_v2），自动迁移
+        try {
+            const oldRaw = localStorage.getItem(OLD_STORAGE);
+            if (oldRaw) {
+                const od = JSON.parse(oldRaw);
+                if (od.docs && od.docs.length > 0) {
+                    docs = od.docs.map(x => ({
+                        id: x.id,
+                        name: x.name,
+                        root: deserializeNode(x.root),
+                        folderId: null,
+                        updatedAt: Date.now()
+                    }));
+                    folders = [];
+                    quotes = [];
+                    currentDocId = od.currentDocId || docs[0].id;
+                    // 迁移到新版
+                    const data = {
+                        docs: docs.map(d => ({id:d.id, name:d.name, root:serializeNode(d.root), folderId:null, updatedAt:d.updatedAt})),
+                        folders, quotes, currentDocId
+                    };
+                    localStorage.setItem(STORAGE, JSON.stringify(data));
+                    setTimeout(()=>{ alert('已恢复之前的 ' + docs.length + ' 张导图'); }, 300);
+                    return true;
+                }
+            }
+        } catch(e) { console.warn('旧版读取失败', e); }
+
         return false;
     }
+
     function showSaveHint() {
         const h = document.getElementById('save-hint');
         if (!h) return;
         h.style.display = 'block';
-        setTimeout(()=>{h.style.display='none';}, 1200);
+        clearTimeout(h._t);
+        h._t = setTimeout(()=>{h.style.display='none';}, 1200);
     }
 
     // ========== 节点查找 ==========
     function getCurrentDoc() { return docs.find(d => d.id === currentDocId) || null; }
     function getRoot() { const d = getCurrentDoc(); return d ? d.root : null; }
     function getNode(id) { return currentNodeMap.get(id) || null; }
+
     function buildNodeMap() {
         const root = getRoot(); if (!root) return;
         currentNodeMap.clear();
-        (function t(n, p) { n.depth = p ? p.depth+1 : 0; n.parentId = p ? p.id : null; currentNodeMap.set(n.id, n); n.children.forEach(c => t(c, n)); })(root, null);
+        (function t(n, p) {
+            n.depth = p ? p.depth+1 : 0;
+            n.parentId = p ? p.id : null;
+            currentNodeMap.set(n.id, n);
+            n.children.forEach(c => t(c, n));
+        })(root, null);
     }
+
     function getVisible() {
         const root = getRoot(); if (!root) return [];
         const r = [];
@@ -257,33 +291,54 @@
         return r;
     }
 
-    // ========== 布局计算 ==========
-    function estimateWidth(n) { const fs = n.depth===0?16:14; return Math.max(n.text.length*fs*0.6+32, 80); }
+    // ========== 布局 ==========
+    function estimateWidth(n) {
+        const fs = n.depth===0?16:14;
+        return Math.max(n.text.length*fs*0.6+32, 80);
+    }
+
     function baseDist(d) { return d===0?0 : d===1?190 : d===2?170 : 150; }
+
     function reqDist(parent, children, s, e, depth) {
         if (!children.length) return baseDist(depth);
-        const widths = children.map(c => estimateWidth(c));
+        const widths = children.map(c => c._w);
         const totalAngle = (e-s)*Math.PI/180;
         let minD = 0;
-        for (let w of widths) { minD = Math.max(minD, (w+20)/Math.max(totalAngle/children.length, 0.1)); }
-        const pW = estimateWidth(parent), mW = Math.max(...widths);
+        const perAngle = totalAngle/children.length;
+        for (let w of widths) {
+            const rd = (w+20)/Math.max(perAngle, 0.1);
+            if (rd > minD) minD = rd;
+        }
+        const pW = parent._w, mW = Math.max(...widths);
         return Math.max(baseDist(depth), minD, (pW+mW)/2+20);
     }
+
     function calcLayout() {
         const root = getRoot(); if (!root) return;
+        // 优化：预计算并缓存宽度
         (function w(n) { n._w = estimateWidth(n); n.children.forEach(w); })(root);
+
         (function as(n, s, e) {
             n.sectorStart = s; n.sectorEnd = e;
-            if (!n.children.length) return;
-            const per = (e-s)/n.children.length;
-            n.children.forEach((c, i) => { c.angle = s+i*per+per/2; as(c, s+i*per, s+i*per+per); });
+            const cnt = n.children.length;
+            if (!cnt) return;
+            const per = (e-s)/cnt;
+            for (let i=0;i<cnt;i++) {
+                const c = n.children[i];
+                c.angle = s+i*per+per/2;
+                as(c, s+i*per, s+i*per+per);
+            }
         })(root, 0, 360);
+
         (function cp(n, px, py) {
-            if (n.depth === 0) { n.x=0; n.y=0; } else {
-                const p = getNode(n.parentId); if (p) {
+            if (n.depth === 0) { n.x=0; n.y=0; }
+            else {
+                const p = getNode(n.parentId);
+                if (p) {
                     const d = reqDist(p, p.children, p.sectorStart, p.sectorEnd, n.depth);
                     const r = (n.angle-90)*Math.PI/180;
-                    n.x = px + Math.cos(r)*d; n.y = py + Math.sin(r)*d;
+                    n.x = px + Math.cos(r)*d;
+                    n.y = py + Math.sin(r)*d;
                 }
             }
             if (!n.collapsed) n.children.forEach(c => cp(c, n.x, n.y));
@@ -298,75 +353,122 @@
 
     function canvasToScreen(cx, cy) { return {x:cx*view.scale+view.panX, y:cy*view.scale+view.panY}; }
 
+    // 优化：render 节流
     function render() {
+        if (renderScheduled) return;
+        renderScheduled = true;
+        requestAnimationFrame(() => {
+            renderScheduled = false;
+            doRender();
+        });
+    }
+
+    function doRender() {
         calcLayout();
         renderSVG();
         renderNodes();
         allowAnim = false;
     }
+
     function renderSVG() {
-        const w = window.innerWidth, h = container.clientHeight || (window.innerHeight-50);
-        svgLayer.setAttribute('width', w); svgLayer.setAttribute('height', h);
+        const w = window.innerWidth;
+        const h = container.clientHeight || (window.innerHeight-50);
+        svgLayer.setAttribute('width', w);
+        svgLayer.setAttribute('height', h);
         svgLayer.setAttribute('viewBox', `0 0 ${w} ${h}`);
-        let c = '';
-        getVisible().forEach(n => {
-            if (n.depth === 0 || !n.parentId) return;
-            const p = getNode(n.parentId); if (!p) return;
+        const paths = [];
+        const vis = getVisible();
+        for (let i=0;i<vis.length;i++) {
+            const n = vis[i];
+            if (n.depth === 0 || !n.parentId) continue;
+            const p = getNode(n.parentId); if (!p) continue;
             const f = canvasToScreen(p.x, p.y), t = canvasToScreen(n.x, n.y);
             const mx = (f.x+t.x)/2, my = (f.y+t.y)/2;
-            c += `<path d="M ${f.x} ${f.y} C ${f.x+(mx-f.x)*0.5} ${f.y}, ${t.x+(mx-t.x)*0.5} ${t.y}, ${t.x} ${t.y}" stroke="#b8c9dd" stroke-width="${1.5*view.scale}" fill="none"/>`;
-        });
-        svgLayer.innerHTML = c;
+            paths.push(`<path d="M ${f.x} ${f.y} C ${f.x+(mx-f.x)*0.5} ${f.y}, ${t.x+(mx-t.x)*0.5} ${t.y}, ${t.x} ${t.y}" stroke="#b8c9dd" stroke-width="${1.5*view.scale}" fill="none"/>`);
+        }
+        svgLayer.innerHTML = paths.join('');
     }
+
     function renderNodes() {
-        nodesLayer.innerHTML = '';
+        // 优化：使用 DocumentFragment
+        const frag = document.createDocumentFragment();
         const vis = getVisible();
         const s = view.scale;
-        vis.forEach(n => {
+        const isCreate = currentMode === 'create';
+        const isNote = currentMode === 'note';
+        const activeNoteId = noteMode.activeNoteId;
+
+        for (let i=0;i<vis.length;i++) {
+            const n = vis[i];
             let wx = n.x, wy = n.y;
-            if (currentMode === 'note' && noteMode.nodePositions[n.id]) {
+            if (isNote && noteMode.nodePositions[n.id]) {
                 wx = noteMode.nodePositions[n.id].x;
                 wy = noteMode.nodePositions[n.id].y;
             }
             const sp = canvasToScreen(wx, wy);
             const wrap = document.createElement('div');
             wrap.className = 'node-wrapper';
-            wrap.style.left = sp.x+'px'; wrap.style.top = sp.y+'px';
+            wrap.style.left = sp.x+'px';
+            wrap.style.top = sp.y+'px';
+
             const box = document.createElement('div');
             box.className = 'node-box';
             if (n.depth === 0) box.classList.add('root-node');
             else if (n.depth === 1) box.classList.add('level-1');
             else box.classList.add('level-2');
             if (n.id === selectedId) box.classList.add('selected');
-            if (noteMode.underlines[n.id] === 'red') box.classList.add('underline-red');
-            if (noteMode.underlines[n.id] === 'black') box.classList.add('underline-black');
-            if (noteMode.underlines[n.id] === 'blue') box.classList.add('underline-blue');
+            const ul = noteMode.underlines[n.id];
+            if (ul === 'red') box.classList.add('underline-red');
+            else if (ul === 'black') box.classList.add('underline-black');
+            else if (ul === 'blue') box.classList.add('underline-blue');
             if (n.color) box.style.backgroundColor = n.color;
+
             const fs = (n.depth===0?16:14)*s;
             box.style.fontSize = fs+'px';
             box.style.padding = `${8*s}px ${16*s}px`;
             box.style.width = Math.max(n.text.length*fs*0.6+32*s, 80*s)+'px';
             box.style.minHeight = (36*s)+'px';
-            box.style.display = 'flex'; box.style.alignItems = 'center'; box.style.justifyContent = 'center';
+            box.style.display = 'flex';
+            box.style.alignItems = 'center';
+            box.style.justifyContent = 'center';
             box.textContent = n.text;
+
             box.addEventListener('click', e => {
                 e.stopPropagation();
                 if (currentMode === 'create') selectNode(n.id);
                 else if (currentMode === 'review') {
                     if (n.link) window.open(n.link, '_blank');
-                    if (n.note) { notePopup.textContent = n.note; notePopup.style.display='block'; notePopup.style.left=(e.clientX+10)+'px'; notePopup.style.top=(e.clientY+10)+'px'; setTimeout(()=>{notePopup.style.display='none';},3000); }
+                    if (n.note) {
+                        notePopup.textContent = n.note;
+                        notePopup.style.display='block';
+                        notePopup.style.left=(e.clientX+10)+'px';
+                        notePopup.style.top=(e.clientY+10)+'px';
+                        setTimeout(()=>{notePopup.style.display='none';},3000);
+                    }
                 } else if (currentMode === 'note') {
                     selectNode(n.id);
                 }
             });
+
             wrap.appendChild(box);
-            if (currentMode === 'create') {
+
+            if (isCreate) {
                 const dot = document.createElement('div');
                 dot.className = 'node-dot';
                 if (n.id === selectedId) dot.classList.add('active');
                 let side = 'right';
                 if (n.depth === 0) side = 'bottom';
-                else { const p = getNode(n.parentId); if (p) { const dx=n.x-p.x, dy=n.y-p.y; const a=Math.atan2(dy,dx)*180/Math.PI; if(a>-45&&a<=45)side='right'; else if(a>45&&a<=135)side='bottom'; else if(a>135||a<=-135)side='left'; else side='top'; } }
+                else {
+                    const p = getNode(n.parentId);
+                    if (p) {
+                        const dx=n.x-p.x, dy=n.y-p.y;
+                        const a=Math.atan2(dy,dx)*180/Math.PI;
+                        if(a>-45&&a<=45)side='right';
+                        else if(a>45&&a<=135)side='bottom';
+                        else if(a>135||a<=-135)side='left';
+                        else side='top';
+                    }
+                }
                 const off = 16*s;
                 if (side==='right'){dot.style.right=(-off)+'px';dot.style.top='50%';dot.style.transform='translateY(-50%)';}
                 else if(side==='left'){dot.style.left=(-off)+'px';dot.style.top='50%';dot.style.transform='translateY(-50%)';}
@@ -375,109 +477,184 @@
                 dot.addEventListener('click', e => { e.stopPropagation(); selectNode(n.id); });
                 wrap.appendChild(dot);
             }
-            nodesLayer.appendChild(wrap);
-        });
-        if (currentMode === 'note') {
-            noteMode.textboxes.filter(tb => tb.noteId === noteMode.activeNoteId).forEach(tb => {
+
+            frag.appendChild(wrap);
+        }
+
+        // 自由文本框
+        if (isNote) {
+            noteMode.textboxes.forEach(tb => {
+                if (tb.noteId !== activeNoteId) return;
                 const sp = canvasToScreen(tb.x, tb.y);
                 const div = document.createElement('div');
                 div.className = 'free-textbox';
-                div.style.left = sp.x+'px'; div.style.top = sp.y+'px';
+                div.style.left = sp.x+'px';
+                div.style.top = sp.y+'px';
                 div.textContent = tb.text;
                 const del = document.createElement('div');
-                del.className = 'del-btn'; del.textContent = '×';
-                del.addEventListener('click', e => { e.stopPropagation(); noteMode.textboxes = noteMode.textboxes.filter(x=>x.id!==tb.id); render(); });
+                del.className = 'del-btn';
+                del.textContent = '×';
+                del.addEventListener('click', e => {
+                    e.stopPropagation();
+                    noteMode.textboxes = noteMode.textboxes.filter(x=>x.id!==tb.id);
+                    render();
+                });
                 div.appendChild(del);
                 let dragging=false, sx, sy, ox, oy;
-                div.addEventListener('pointerdown', e => { e.stopPropagation(); dragging=true; sx=e.clientX; sy=e.clientY; ox=tb.x; oy=tb.y; div.setPointerCapture(e.pointerId); });
-                div.addEventListener('pointermove', e => { if(!dragging)return; tb.x=ox+(e.clientX-sx)/view.scale; tb.y=oy+(e.clientY-sy)/view.scale; render(); });
+                div.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
+                    dragging=true; sx=e.clientX; sy=e.clientY; ox=tb.x; oy=tb.y;
+                    div.setPointerCapture(e.pointerId);
+                });
+                div.addEventListener('pointermove', e => {
+                    if(!dragging)return;
+                    tb.x=ox+(e.clientX-sx)/view.scale;
+                    tb.y=oy+(e.clientY-sy)/view.scale;
+                    render();
+                });
                 div.addEventListener('pointerup', () => { dragging=false; });
-                nodesLayer.appendChild(div);
+                frag.appendChild(div);
             });
         }
+
+        nodesLayer.innerHTML = '';
+        nodesLayer.appendChild(frag);
     }
 
-    function selectNode(id) { selectedId = id; render(); updateToolbar(); }
+    function selectNode(id) {
+        selectedId = id;
+        render();
+        updateToolbar();
+    }// ========== 工具栏（差异更新） ==========
+function updateToolbar() {
+    const inner = document.getElementById('toolbar-inner');
+    const noteBar = document.getElementById('note-toolbar');
 
-    // ========== 工具栏 ==========
-    function updateToolbar() {
-        const inner = document.getElementById('toolbar-inner');
-        const noteBar = document.getElementById('note-toolbar');
-        if (currentMode === 'create') {
-            inner.style.display = 'flex';
-            noteBar.classList.remove('active');
-            const has = !!selectedId;
-            const node = selectedId ? getNode(selectedId) : null;
-            const canCollapse = node && node.children.length > 0;
-            const isCollapsed = node && node.collapsed;
-            inner.innerHTML = `
-                <div class="toolbar-row">
-                    <button class="toolbar-btn" data-a="add-child" style="opacity:${has?1:0.4}">子节点</button>
-                    <button class="toolbar-btn" data-a="edit" style="opacity:${has?1:0.4}">编辑</button>
-                    <button class="toolbar-btn" data-a="collapse" style="opacity:${canCollapse?1:0.4}">${isCollapsed?'独立展开':'独立折叠'}</button>
-                    <button class="toolbar-btn" data-a="expand-all">全部展开</button>
-                    <button class="toolbar-btn" data-a="focus" style="opacity:${has?1:0.4}">聚焦</button>
-                </div>
-                <div class="toolbar-row">
-                    <button class="toolbar-btn" data-a="add-sibling" style="opacity:${has?1:0.4}">同节点</button>
-                    <button class="toolbar-btn" data-a="delete" style="opacity:${has?1:0.4}">删除</button>
-                    <button class="toolbar-btn" data-a="collapse-toggle" style="opacity:${canCollapse?1:0.4}">${isCollapsed?'独立展开':'独立折叠'}</button>
-                    <button class="toolbar-btn" data-a="collapse-all">全部折叠</button>
-                    <button class="toolbar-btn" data-a="unfocus">返回</button>
-                </div>`;
-        } else if (currentMode === 'note') {
-            inner.style.display = 'none';
-            noteBar.classList.add('active');
-            noteBar.innerHTML = `
-                <button class="toolbar-btn" data-a="note-new">新建笔记</button>
-                <button class="toolbar-btn" data-a="note-switch">切换笔记</button>
-                <button class="toolbar-btn" data-a="add-textbox">添加文本框</button>
-                <button class="toolbar-btn" data-a="underline-red">红线</button>
-                <button class="toolbar-btn" data-a="underline-black">黑线</button>
-                <button class="toolbar-btn" data-a="underline-blue">蓝线</button>
-                <button class="toolbar-btn" data-a="reset-layout">重置布局</button>`;
-        } else {
-            inner.style.display = 'none';
-            noteBar.classList.remove('active');
-        }
-    }// ========== 撤销 ==========
+    if (currentMode === 'create') {
+        const has = !!selectedId;
+        const node = selectedId ? getNode(selectedId) : null;
+        const canCollapse = node && node.children.length > 0;
+        const isCollapsed = node && node.collapsed;
+        // 优化：生成 key，避免重复重建
+        const key = `create|${has}|${canCollapse}|${isCollapsed}`;
+        if (key === lastToolbarKey) return;
+        lastToolbarKey = key;
+        inner.style.display = 'flex';
+        noteBar.classList.remove('active');
+        inner.innerHTML = `
+            <div class="toolbar-row">
+                <button class="toolbar-btn" data-a="add-child" style="opacity:${has?1:0.4}">子节点</button>
+                <button class="toolbar-btn" data-a="edit" style="opacity:${has?1:0.4}">编辑</button>
+                <button class="toolbar-btn" data-a="collapse" style="opacity:${canCollapse?1:0.4}">${isCollapsed?'独立展开':'独立折叠'}</button>
+                <button class="toolbar-btn" data-a="expand-all">全部展开</button>
+                <button class="toolbar-btn" data-a="focus" style="opacity:${has?1:0.4}">聚焦</button>
+            </div>
+            <div class="toolbar-row">
+                <button class="toolbar-btn" data-a="add-sibling" style="opacity:${has?1:0.4}">同节点</button>
+                <button class="toolbar-btn" data-a="delete" style="opacity:${has?1:0.4}">删除</button>
+                <button class="toolbar-btn" data-a="collapse-toggle" style="opacity:${canCollapse?1:0.4}">${isCollapsed?'独立展开':'独立折叠'}</button>
+                <button class="toolbar-btn" data-a="collapse-all">全部折叠</button>
+                <button class="toolbar-btn" data-a="unfocus">返回</button>
+            </div>`;
+    } else if (currentMode === 'note') {
+        const key = 'note';
+        if (key === lastToolbarKey) return;
+        lastToolbarKey = key;
+        inner.style.display = 'none';
+        noteBar.classList.add('active');
+        noteBar.innerHTML = `
+            <button class="toolbar-btn" data-a="note-new">新建笔记</button>
+            <button class="toolbar-btn" data-a="note-switch">切换笔记</button>
+            <button class="toolbar-btn" data-a="add-textbox">添加文本框</button>
+            <button class="toolbar-btn" data-a="underline-red">红线</button>
+            <button class="toolbar-btn" data-a="underline-black">黑线</button>
+            <button class="toolbar-btn" data-a="underline-blue">蓝线</button>
+            <button class="toolbar-btn" data-a="reset-layout">重置布局</button>`;
+    } else {
+        const key = 'review';
+        if (key === lastToolbarKey) return;
+        lastToolbarKey = key;
+        inner.style.display = 'none';
+        noteBar.classList.remove('active');
+    }
+}
+
+// ========== 撤销 ==========
 function saveHistory() {
     const doc = getCurrentDoc(); if (!doc) return;
     const snap = JSON.stringify(doc.root);
     if (historyIndex < history.length-1) history = history.slice(0, historyIndex+1);
-    history.push(snap); if (history.length>50) history.shift();
+    history.push(snap);
+    if (history.length>50) history.shift();
     historyIndex = history.length-1;
 }
 
 // ========== 节点操作 ==========
 function addChild() {
-    if(!selectedId)return; const p=getNode(selectedId); if(!p)return;
-    saveHistory(); const n=createNode('新节点',p.id); p.children.push(n); buildNodeMap(); selectNode(n.id); saveAll();
+    if(!selectedId)return;
+    const p=getNode(selectedId); if(!p)return;
+    saveHistory();
+    const n=createNode('新节点',p.id);
+    p.children.push(n);
+    buildNodeMap();
+    selectNode(n.id);
+    saveAll();
 }
 function addSibling() {
-    if(!selectedId)return; const n=getNode(selectedId); if(!n||!n.parentId)return;
-    const p=getNode(n.parentId); if(!p)return; saveHistory();
-    const nn=createNode('新节点',p.id); const i=p.children.indexOf(n); p.children.splice(i+1,0,nn);
-    buildNodeMap(); selectNode(nn.id); saveAll();
+    if(!selectedId)return;
+    const n=getNode(selectedId);
+    if(!n||!n.parentId)return;
+    const p=getNode(n.parentId); if(!p)return;
+    saveHistory();
+    const nn=createNode('新节点',p.id);
+    const i=p.children.indexOf(n);
+    p.children.splice(i+1,0,nn);
+    buildNodeMap();
+    selectNode(nn.id);
+    saveAll();
 }
 function deleteNode() {
-    if(!selectedId)return; const n=getNode(selectedId); if(!n||!n.parentId)return;
-    const p=getNode(n.parentId); saveHistory(); p.children=p.children.filter(c=>c.id!==selectedId);
-    selectedId=null; buildNodeMap(); render(); saveAll();
+    if(!selectedId)return;
+    const n=getNode(selectedId);
+    if(!n||!n.parentId)return;
+    const p=getNode(n.parentId);
+    saveHistory();
+    p.children=p.children.filter(c=>c.id!==selectedId);
+    selectedId=null;
+    buildNodeMap();
+    render();
+    saveAll();
 }
 function toggleCollapse() {
-    if(!selectedId)return; const n=getNode(selectedId); if(!n||!n.children.length)return;
-    allowAnim=true; n.collapsed=!n.collapsed; render(); saveAll();
+    if(!selectedId)return;
+    const n=getNode(selectedId);
+    if(!n||!n.children.length)return;
+    allowAnim=true;
+    n.collapsed=!n.collapsed;
+    render();
+    saveAll();
 }
 let focusStack=[];
-function focusNode() { if(!selectedId)return; focusStack.push(currentDocId); selectNode(null); render(); }
+function focusNode() {
+    if(!selectedId)return;
+    focusStack.push(currentDocId);
+    selectNode(null);
+    render();
+}
 function unfocusNode() { focusStack.pop(); render(); }
-function resetView() { view.scale=1; view.panX=window.innerWidth/2; view.panY=(container.clientHeight||(window.innerHeight-50))/2; render(); }
+
+function resetView() {
+    view.scale=1;
+    view.panX=window.innerWidth/2;
+    view.panY=(container.clientHeight||(window.innerHeight-50))/2;
+    render();
+}
 
 // ========== 编辑模态框 ==========
 const modalEdit = document.getElementById('modal-edit');
 function showEditModal() {
-    if(!selectedId)return; const n=getNode(selectedId); if(!n)return;
+    if(!selectedId)return;
+    const n=getNode(selectedId); if(!n)return;
     document.getElementById('edit-text').value=n.text;
     document.getElementById('edit-link').value=n.link||'';
     document.getElementById('edit-color').value=n.color||'#ffffff';
@@ -486,11 +663,18 @@ function showEditModal() {
 }
 document.getElementById('edit-cancel').addEventListener('click',()=>modalEdit.classList.remove('show'));
 document.getElementById('edit-save').addEventListener('click',()=>{
-    if(!selectedId)return; const n=getNode(selectedId); if(!n)return;
-    const t=document.getElementById('edit-text').value.trim(); if(!t)return;
-    saveHistory(); n.text=t; n.link=document.getElementById('edit-link').value.trim();
-    n.color=document.getElementById('edit-color').value; n.note=document.getElementById('edit-note').value.trim();
-    modalEdit.classList.remove('show'); render(); saveAll();
+    if(!selectedId)return;
+    const n=getNode(selectedId); if(!n)return;
+    const t=document.getElementById('edit-text').value.trim();
+    if(!t)return;
+    saveHistory();
+    n.text=t;
+    n.link=document.getElementById('edit-link').value.trim();
+    n.color=document.getElementById('edit-color').value;
+    n.note=document.getElementById('edit-note').value.trim();
+    modalEdit.classList.remove('show');
+    render();
+    saveAll();
 });
 
 // ========== 工具栏点击 ==========
@@ -502,8 +686,16 @@ document.getElementById('toolbar-inner').addEventListener('click', e => {
     else if (a === 'edit') showEditModal();
     else if (a === 'delete') deleteNode();
     else if (a === 'collapse' || a === 'collapse-toggle') toggleCollapse();
-    else if (a === 'expand-all') { allowAnim=true; (function t(n){n.collapsed=false;n.children.forEach(t);})(getRoot()); render(); saveAll(); }
-    else if (a === 'collapse-all') { allowAnim=true; (function t(n){if(n.depth>0)n.collapsed=true;n.children.forEach(t);})(getRoot()); render(); saveAll(); }
+    else if (a === 'expand-all') {
+        allowAnim=true;
+        (function t(n){n.collapsed=false;n.children.forEach(t);})(getRoot());
+        render(); saveAll();
+    }
+    else if (a === 'collapse-all') {
+        allowAnim=true;
+        (function t(n){if(n.depth>0)n.collapsed=true;n.children.forEach(t);})(getRoot());
+        render(); saveAll();
+    }
     else if (a === 'focus') focusNode();
     else if (a === 'unfocus') unfocusNode();
 });
@@ -536,7 +728,8 @@ document.getElementById('note-toolbar').addEventListener('click', e => {
 let ptr=null, sx,sy, spx,spy, drag=false, moved=false;
 container.addEventListener('pointerdown',e=>{
     if(e.target.closest('.node-dot')||e.target.closest('.free-textbox'))return;
-    ptr=e.pointerId; sx=e.clientX; sy=e.clientY; spx=view.panX; spy=view.panY; drag=false; moved=false;
+    ptr=e.pointerId; sx=e.clientX; sy=e.clientY; spx=view.panX; spy=view.panY;
+    drag=false; moved=false;
     container.setPointerCapture(e.pointerId);
 });
 container.addEventListener('pointermove',e=>{
@@ -611,17 +804,20 @@ document.getElementById('mode-switcher').addEventListener('click',e=>{
     btn.classList.add('active');
     currentMode=btn.dataset.mode;
     selectedId=null;
+    lastToolbarKey = ''; // 强制刷新工具栏
     if(currentMode==='note' && !noteMode.activeNoteId){
         const id='nt'+Date.now();
         noteMode.notes.push({id,name:'笔记1'});
         noteMode.activeNoteId=id;
     }
-    render(); updateToolbar();
+    render();
+    updateToolbar();
 });    // ========== 页面导航 ==========
     const pages = {home:'home-page', repo:'repo-page', folder:'folder-page', quote:'quote-edit-page', edit:'edit-page'};
     let currentPage = 'home';
+
     function goPage(name) {
-        Object.values(pages).forEach(id => document.getElementById(id).classList.remove('active'));
+        Object.keys(pages).forEach(k => document.getElementById(pages[k]).classList.remove('active'));
         document.getElementById(pages[name]).classList.add('active');
         currentPage = name;
         document.getElementById('bottom-nav').style.display = (name==='edit')?'none':'flex';
@@ -649,14 +845,18 @@ document.getElementById('mode-switcher').addEventListener('click',e=>{
     }
 
     document.getElementById('create-btn').addEventListener('click',()=>{
-        if (currentDocId && docs.find(d=>d.id===currentDocId)) { openDoc(currentDocId); }
-        else { createNewDoc(); }
+        if (currentDocId && docs.find(d=>d.id===currentDocId)) openDoc(currentDocId);
+        else createNewDoc();
     });
 
     function createNewDoc() {
         const doc = {id:'d'+Date.now(), name:'未命名导图', root:createNode('中心主题'), folderId:null, updatedAt:Date.now()};
-        docs.push(doc); currentDocId = doc.id; saveAll(); openDoc(doc.id);
+        docs.push(doc);
+        currentDocId = doc.id;
+        saveAll();
+        openDoc(doc.id);
     }
+
     function openDoc(id) {
         currentDocId = id;
         const doc = getCurrentDoc(); if(!doc)return;
@@ -664,11 +864,13 @@ document.getElementById('mode-switcher').addEventListener('click',e=>{
         document.getElementById('edit-doc-name').textContent = doc.name;
         buildNodeMap();
         currentMode = 'create';
+        lastToolbarKey = '';
         document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode==='create'));
         goPage('edit');
         setTimeout(()=>{ resetView(); updateToolbar(); }, 50);
         saveAll();
     }
+
     document.getElementById('back-btn').addEventListener('click',()=>{ saveAll(); goPage('home'); });
 
     // ========== 仓库 ==========
@@ -694,9 +896,12 @@ document.getElementById('mode-switcher').addEventListener('click',e=>{
         }
         list.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
         grid.innerHTML = '';
+        const frag = document.createDocumentFragment();
         list.forEach(d => {
-            const card = document.createElement('div'); card.className = 'doc-card';
-            let cnt=0; (function t(n){cnt++;n.children.forEach(t);})(d.root);
+            const card = document.createElement('div');
+            card.className = 'doc-card';
+            let cnt=0;
+            (function t(n){cnt++;n.children.forEach(t);})(d.root);
             const borderColor = cnt<=5?'#ccc':cnt<=15?'#5b8ff9':cnt<=30?'#27ae60':cnt<=50?'#e67e22':'#e74c3c';
             card.style.borderColor = borderColor;
             card.innerHTML = `<div class="doc-thumb">🧠</div><div class="doc-card-footer"><span class="doc-card-name">${d.name}</span><span class="doc-more">⋮</span></div>`;
@@ -705,8 +910,9 @@ document.getElementById('mode-switcher').addEventListener('click',e=>{
             let lt;
             card.addEventListener('touchstart',()=>{ lt=setTimeout(()=>showContextMenu({clientX:100,clientY:100},d.id),600); });
             card.addEventListener('touchend',()=>clearTimeout(lt));
-            grid.appendChild(card);
+            frag.appendChild(card);
         });
+        grid.appendChild(frag);
     }
 
     function showContextMenu(e, docId) {
@@ -734,7 +940,10 @@ document.getElementById('mode-switcher').addEventListener('click',e=>{
                 const d=docs.find(x=>x.id===docId);
                 const json=JSON.stringify({name:d.name,root:serializeNode(d.root)},null,2);
                 const b=new Blob([json],{type:'application/json'});
-                const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=d.name+'.json';a.click();
+                const a=document.createElement('a');
+                a.href=URL.createObjectURL(b);
+                a.download=d.name+'.json';
+                a.click();
             }
             else if (act==='classify') {
                 if(!folders.length){alert('请先创建文件夹');return;}
@@ -755,36 +964,51 @@ document.getElementById('mode-switcher').addEventListener('click',e=>{
         if(n&&n.trim()){folders.push({id:'f'+Date.now(),name:n.trim(),open:false});saveAll();renderFolders();}
     });
     function renderFolders() {
-        const list=document.getElementById('folder-list'); list.innerHTML='';
+        const list=document.getElementById('folder-list');
+        list.innerHTML='';
+        const frag = document.createDocumentFragment();
         folders.forEach(f=>{
-            const div=document.createElement('div'); div.className='folder-item';
+            const div=document.createElement('div');
+            div.className='folder-item';
             div.innerHTML=`<div class="folder-header"><span class="folder-icon">📁</span><span class="folder-name">${f.name}</span><span class="folder-arrow${f.open?' open':''}">▶</span></div><div class="folder-content${f.open?' open':''}"></div>`;
             const content=div.querySelector('.folder-content');
             docs.filter(d=>d.folderId===f.id).forEach(d=>{
-                const row=document.createElement('div'); row.className='folder-doc'; row.textContent=d.name;
+                const row=document.createElement('div');
+                row.className='folder-doc';
+                row.textContent=d.name;
                 row.addEventListener('click',()=>openDoc(d.id));
                 content.appendChild(row);
             });
             div.querySelector('.folder-header').addEventListener('click',()=>{f.open=!f.open;renderFolders();});
-            list.appendChild(div);
+            frag.appendChild(div);
         });
+        list.appendChild(frag);
     }
 
     // ========== 名言管理 ==========
     function renderQuoteList() {
-        const list=document.getElementById('quote-list'); list.innerHTML='';
+        const list=document.getElementById('quote-list');
+        list.innerHTML='';
+        const frag = document.createDocumentFragment();
         quotes.forEach((q,i)=>{
-            const div=document.createElement('div'); div.className='quote-item';
+            const div=document.createElement('div');
+            div.className='quote-item';
             div.innerHTML=`<div class="qt">${q.text}</div><div class="qa">—— ${q.author}</div>`;
-            const del=document.createElement('span'); del.className='qdel'; del.textContent='×';
+            const del=document.createElement('span');
+            del.className='qdel';
+            del.textContent='×';
             del.addEventListener('click',()=>{quotes.splice(i,1);saveAll();renderQuoteList();});
-            div.appendChild(del); list.appendChild(div);
+            div.appendChild(del);
+            frag.appendChild(div);
         });
+        list.appendChild(frag);
     }
     document.getElementById('add-quote-btn').addEventListener('click',()=>{
         const t=prompt('名言内容'); if(!t)return;
         const a=prompt('作者'); if(!a)return;
-        quotes.push({text:t,author:a}); saveAll(); renderQuoteList();
+        quotes.push({text:t,author:a});
+        saveAll();
+        renderQuoteList();
     });
 
     // ========== 初始化 ==========
@@ -824,12 +1048,13 @@ document.getElementById('mode-switcher').addEventListener('click',e=>{
             initQuotes();
             if (!docs.length) {
                 const d={id:'d'+Date.now(),name:'我的第一张导图',root:createNode('中心主题'),folderId:null,updatedAt:Date.now()};
-                docs.push(d); saveAll();
+                docs.push(d);
+                saveAll();
             }
             if (!currentDocId || !docs.find(d=>d.id===currentDocId)) currentDocId = docs[0].id;
             goPage('home');
             showRandomQuote();
-            console.log('初始化成功，名言数量:', quotes.length);
+            console.log('初始化成功，文档数:', docs.length, '名言数:', quotes.length);
         } catch(e) {
             alert('初始化错误：' + e.message);
             console.error(e);
@@ -839,7 +1064,13 @@ document.getElementById('mode-switcher').addEventListener('click',e=>{
     // 直接执行初始化
     init();
 
-    window.addEventListener('resize', ()=>{ if(currentPage==='edit') render(); });
+    // 优化：resize 防抖
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        if (currentPage !== 'edit') return;
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => render(), 150);
+    });
 })();
 </script>
 </body>
