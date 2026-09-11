@@ -21,7 +21,7 @@
         #repo-page{background:#f5f0e6}
         .page-topbar{height:56px;background:#fff;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid #e0dcd5;gap:8px}
         .search-input{flex:1;border:1.5px solid #e0dcd5;border-radius:20px;padding:8px 14px;font-size:14px;outline:none;background:#f9f7f3;color:#4a3f35}
-        .search-toggle{min-width:56px;height:36px;border-radius:18px;border:1.5px solid #a0522d;background:#fff;color:#a0522d;font-size:12px;font-weight:600;cursor:pointer;padding:0 10px}
+        .search-toggle{min-width:70px;height:36px;border-radius:18px;border:1.5px solid #a0522d;background:#fff;color:#a0522d;font-size:12px;font-weight:600;cursor:pointer;padding:0 10px}
         #repo-grid{flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
         .doc-card{background:#fff;border-radius:12px;overflow:hidden;border:2.5px solid #ccc;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;position:relative}
         .doc-thumb{height:100px;background:#f0ece4;display:flex;align-items:center;justify-content:center;font-size:36px;color:#c5b8a8}
@@ -83,6 +83,9 @@
         #context-menu{position:fixed;z-index:300;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);display:none;min-width:120px;overflow:hidden}
         #context-menu .ctx-item{padding:12px 16px;font-size:14px;color:#4a3f35;cursor:pointer;border-bottom:1px solid #f0ece4}
         #context-menu .ctx-item:active{background:#f5f0e6}
+        .search-menu-item{padding:12px 16px;font-size:14px;color:#4a3f35;cursor:pointer;border-bottom:1px solid #f0ece4}
+        .search-menu-item:last-child{border-bottom:none}
+        .search-menu-item:active{background:#f5f0e6}
         #note-popup{position:fixed;z-index:250;background:#fff;border-radius:10px;padding:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);max-width:260px;display:none;font-size:13px;color:#4a3f35;word-break:break-word}
         .free-textbox{position:absolute;background:#fffde7;border:1.5px dashed #a0522d;border-radius:6px;color:#4a3f35;pointer-events:auto;z-index:5;box-shadow:0 2px 6px rgba(0,0,0,0.08);transform-origin:top left;overflow:visible}
         .free-textbox.highlight{box-shadow:0 0 0 3px #f0ad4e,0 4px 12px rgba(0,0,0,0.15);border-color:#f0ad4e}
@@ -101,9 +104,14 @@
         <button id="create-btn">Create</button>
     </div>
     <div id="repo-page" class="page">
-        <div class="page-topbar">
+        <div class="page-topbar" style="position:relative;">
             <input class="search-input" id="repo-search" placeholder="搜索...">
-            <button class="search-toggle" id="search-toggle">名称</button>
+            <button class="search-toggle" id="search-toggle">名称 ▾</button>
+            <div id="search-menu" style="display:none;position:absolute;top:56px;right:12px;background:#fff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:140px;z-index:300;overflow:hidden;">
+                <div class="search-menu-item" data-mode="name">名称</div>
+                <div class="search-menu-item" data-mode="content">内容</div>
+                <div class="search-menu-item" data-mode="import">导入</div>
+            </div>
         </div>
         <div id="repo-grid"></div>
     </div>
@@ -174,9 +182,19 @@
             <button class="modal-btn" data-color="red" style="width:100%;margin-bottom:8px;border-left:6px solid #e74c3c;justify-content:flex-start;">红线</button>
             <button class="modal-btn" data-color="black" style="width:100%;margin-bottom:8px;border-left:6px solid #2c3e50;justify-content:flex-start;">黑线</button>
             <button class="modal-btn" data-color="blue" style="width:100%;margin-bottom:8px;border-left:6px solid #3498db;justify-content:flex-start;">蓝线</button>
-            <button class="modal-btn" data-color="none" style="width:100%;margin-bottom:8px;border-left:6px solid #ccc;justify-content:flex-start;">清除划线</button>
             <div class="modal-actions">
                 <button class="modal-btn primary" id="color-modal-close">关闭</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-import" class="modal-overlay">
+        <div class="modal-box">
+            <h3>📥 导入纯文本</h3>
+            <p style="font-size:12px;color:#8b7d6b;margin-bottom:8px;">支持缩进、Markdown、编号等，第一行作为根节点</p>
+            <textarea id="import-textarea" placeholder="示例：&#10;学习方法&#10;  记忆原理&#10;    间隔重复&#10;    遗忘曲线&#10;  时间管理&#10;    番茄工作法" style="min-height:200px;font-family:monospace;"></textarea>
+            <div class="modal-actions">
+                <button class="modal-btn" id="import-cancel">取消</button>
+                <button class="modal-btn primary" id="import-confirm">生成导图</button>
             </div>
         </div>
     </div>
@@ -198,6 +216,7 @@
     var renderScheduled = false;
     var saveTimer = null;
     var focusStack = [];
+    var focusNodeId = null;
     var currentUnderlineColor = 'red';
     var underlineClickTimer = null;
     var createClickTimer = null;
@@ -285,7 +304,19 @@
         return false;
     }
     function getCurrentDoc() { return docs.find(function(d){ return d.id === currentDocId; }) || null; }
-    function getRoot() { var d = getCurrentDoc(); return d ? d.root : null; }
+    function getRoot() {
+        var d = getCurrentDoc();
+        if (!d) return null;
+        if (focusNodeId) {
+            var found = null;
+            (function find(n) {
+                if (n.id === focusNodeId) { found = n; return; }
+                n.children.forEach(find);
+            })(d.root);
+            if (found) return found;
+        }
+        return d.root;
+    }
     function getNode(id) { return currentNodeMap.get(id) || null; }
     function buildNodeMap() {
         var root = getRoot(); if (!root) return;
@@ -668,7 +699,7 @@ document.getElementById('edit-save').addEventListener('click',function(){
         var has = !!selectedId;
         var node = selectedId ? getNode(selectedId) : null;
         var canCollapse = node && node.children.length > 0;
-        var key = 'create|'+has+'|'+canCollapse;
+        var key = 'create|'+has+'|'+canCollapse+'|'+(focusNodeId?'f':'n');
         if (key === lastToolbarKey) return;
         lastToolbarKey = key;
         inner.style.display = 'flex';
@@ -678,14 +709,15 @@ document.getElementById('edit-save').addEventListener('click',function(){
             '<button class="toolbar-btn" data-a="edit" style="opacity:'+(has?1:0.4)+'">编辑</button>'+
             '<button class="toolbar-btn" data-a="expand-node" style="opacity:'+(canCollapse?1:0.4)+'">独立展开</button>'+
             '<button class="toolbar-btn" data-a="expand-all">全部展开</button>'+
-            '<button class="toolbar-btn" data-a="focus" style="opacity:'+(has?1:0.4)+'">聚焦</button>'+
+            (focusNodeId
+                ? '<button class="toolbar-btn" data-a="unfocus">返回</button>'
+                : '<button class="toolbar-btn" data-a="focus" style="opacity:'+(has?1:0.4)+'">聚焦</button>')+
             '<button class="toolbar-btn" data-a="undo">撤回</button>'+
             '</div><div class="toolbar-row">'+
             '<button class="toolbar-btn" data-a="add-sibling" style="opacity:'+(has?1:0.4)+'">同节点</button>'+
             '<button class="toolbar-btn" data-a="delete" style="opacity:'+(has?1:0.4)+'">删除</button>'+
             '<button class="toolbar-btn" data-a="collapse-node" style="opacity:'+(canCollapse?1:0.4)+'">独立折叠</button>'+
             '<button class="toolbar-btn" data-a="collapse-all">全部折叠</button>'+
-            '<button class="toolbar-btn" data-a="unfocus">返回</button>'+
             '<button class="toolbar-btn" data-a="redo">重做</button>'+
             '</div>';
     } else if (currentMode === 'note') {
@@ -717,8 +749,28 @@ document.getElementById('toolbar-inner').addEventListener('click', function(e){
     else if (a === 'collapse-node') collapseSelected();
     else if (a === 'expand-all') { saveHistory(); allowAnim=true; (function t(n){n.collapsed=false;n.children.forEach(t);})(getRoot()); render(); saveAll(); }
     else if (a === 'collapse-all') { saveHistory(); allowAnim=true; (function t(n){if(n.depth>0)n.collapsed=true;n.children.forEach(t);})(getRoot()); render(); saveAll(); }
-    else if (a === 'focus') { if(selectedId){ focusStack.push(currentDocId); selectNode(null); render(); } }
-    else if (a === 'unfocus') { focusStack.pop(); render(); }
+    else if (a === 'focus') {
+        if (selectedId) {
+            focusStack.push(focusNodeId || 'root');
+            focusNodeId = selectedId;
+            selectedId = null;
+            buildNodeMap();
+            resetView();
+            updateToolbar();
+        }
+    }
+    else if (a === 'unfocus') {
+        if (focusStack.length > 0) {
+            focusNodeId = focusStack.pop();
+            if (focusNodeId === 'root') focusNodeId = null;
+        } else {
+            focusNodeId = null;
+        }
+        selectedId = null;
+        buildNodeMap();
+        resetView();
+        updateToolbar();
+    }
     else if (a === 'undo') undo();
     else if (a === 'redo') redo();
 });
@@ -742,9 +794,10 @@ document.getElementById('note-toolbar').addEventListener('click', function(e){
                 underlineClickTimer = null;
                 if (!selectedId) { alert('请先点击要划线的节点'); return; }
                 saveHistory();
-                if (currentUnderlineColor === 'none') {
+                if (noteMode.underlines[selectedId]) {
                     delete noteMode.underlines[selectedId];
                 } else {
+                    if (currentUnderlineColor === 'none') return;
                     noteMode.underlines[selectedId] = currentUnderlineColor;
                 }
                 render(); saveAll();
@@ -769,6 +822,11 @@ document.getElementById('modal-color').addEventListener('click', function(e){
     if (!btn) return;
     currentUnderlineColor = btn.dataset.color;
     document.getElementById('modal-color').classList.remove('show');
+    if (selectedId) {
+        saveHistory();
+        noteMode.underlines[selectedId] = btn.dataset.color;
+        render(); saveAll();
+    }
 });
 document.getElementById('color-modal-close').addEventListener('click', function(){
     document.getElementById('modal-color').classList.remove('show');
@@ -978,6 +1036,8 @@ document.getElementById('mode-switcher').addEventListener('click',function(e){
         var doc = getCurrentDoc(); if(!doc)return;
         doc.updatedAt = Date.now();
         document.getElementById('edit-doc-name').textContent = doc.name;
+        focusNodeId = null;
+        focusStack = [];
         buildNodeMap();
         history = [JSON.stringify({root: doc.root, note: noteMode})];
         historyIndex = 0;
@@ -990,12 +1050,142 @@ document.getElementById('mode-switcher').addEventListener('click',function(e){
     }
     document.getElementById('back-btn').addEventListener('click',function(){ saveAll(); goPage('home'); });
     var searchMode = 'name';
-    document.getElementById('search-toggle').addEventListener('click',function(){
-        searchMode = searchMode==='name'?'content':'name';
-        this.textContent = searchMode==='name'?'名称':'内容';
-        renderRepo();
+    document.getElementById('search-toggle').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var menu = document.getElementById('search-menu');
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
     });
-    document.getElementById('repo-search').addEventListener('input',renderRepo);
+    document.getElementById('search-menu').addEventListener('click', function(e) {
+        var item = e.target.closest('.search-menu-item');
+        if (!item) return;
+        var mode = item.dataset.mode;
+        document.getElementById('search-menu').style.display = 'none';
+        if (mode === 'name') {
+            searchMode = 'name';
+            document.getElementById('search-toggle').textContent = '名称 ▾';
+            renderRepo();
+        } else if (mode === 'content') {
+            searchMode = 'content';
+            document.getElementById('search-toggle').textContent = '内容 ▾';
+            renderRepo();
+        } else if (mode === 'import') {
+            showImportModal();
+        }
+    });
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#search-menu') && !e.target.closest('#search-toggle')) {
+            document.getElementById('search-menu').style.display = 'none';
+        }
+    });
+    function showImportModal() {
+        document.getElementById('import-textarea').value = '';
+        document.getElementById('modal-import').classList.add('show');
+    }
+    document.getElementById('import-cancel').addEventListener('click', function() {
+        document.getElementById('modal-import').classList.remove('show');
+    });
+    document.getElementById('import-confirm').addEventListener('click', function() {
+        var text = document.getElementById('import-textarea').value;
+        if (!text.trim()) { alert('请粘贴文本'); return; }
+        var root = parsePlainText(text);
+        if (!root) { alert('无法解析'); return; }
+        var doc = {
+            id: 'd' + Date.now(),
+            name: '导入的导图',
+            root: root,
+            folderId: null,
+            updatedAt: Date.now()
+        };
+        docs.push(doc);
+        currentDocId = doc.id;
+        saveAll();
+        document.getElementById('modal-import').classList.remove('show');
+        openDoc(doc.id);
+    });
+    function parsePlainText(text) {
+        var lines = text.split('\n');
+        var parsed = [];
+        for (var i = 0; i < lines.length; i++) {
+            var raw = lines[i];
+            var trimmed = raw.trim();
+            if (!trimmed) continue;
+            var level = 0;
+            var content = trimmed;
+            var headMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+            if (headMatch) {
+                level = headMatch[1].length - 1;
+                content = headMatch[2].trim();
+            } else {
+                var indentMatch = raw.match(/^([\s]*)/);
+                var indentStr = indentMatch[1].replace(/\t/g, '  ').replace(/　/g, '  ');
+                level = Math.floor(indentStr.length / 2);
+                content = trimmed;
+                var numMatch = content.match(/^(\d+(?:\.\d+)*)[.)、]\s*(.*)$/);
+                if (numMatch) {
+                    level += numMatch[1].split('.').length - 1;
+                    content = numMatch[2].trim();
+                } else {
+                    var cnMatch = content.match(/^([一二三四五六七八九十]+)[、.．]\s*(.*)$/);
+                    if (cnMatch) {
+                        level += 1;
+                        content = cnMatch[2].trim();
+                    } else {
+                        var brMatch = content.match(/^[（(](\d+)[）)]\s*(.*)$/);
+                        if (brMatch) {
+                            level += 2;
+                            content = brMatch[2].trim();
+                        } else {
+                            var cnBrMatch = content.match(/^[（(]([一二三四五六七八九十]+)[）)]\s*(.*)$/);
+                            if (cnBrMatch) {
+                                level += 2;
+                                content = cnBrMatch[2].trim();
+                            } else {
+                                var checkMatch = content.match(/^[-*+]\s+\[[ x]\]\s*(.*)$/i);
+                                if (checkMatch) {
+                                    content = checkMatch[1].trim();
+                                } else {
+                                    var listMatch = content.match(/^[-*+]\s+(.*)$/);
+                                    if (listMatch) {
+                                        content = listMatch[1].trim();
+                                    } else {
+                                        var romanMatch = content.match(/^(I{1,3}|IV|V|VI{0,3}|IX|X)[.)、]\s*(.*)$/i);
+                                        if (romanMatch) {
+                                            level += 1;
+                                            content = romanMatch[2].trim();
+                                        } else {
+                                            var circleMatch = content.match(/^[①②③④⑤⑥⑦⑧⑨⑩]\s*(.*)$/);
+                                            if (circleMatch) {
+                                                level += 2;
+                                                content = circleMatch[1].trim();
+                                            } else {
+                                                if (/^[-=]{3,}$/.test(content)) continue;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (content) parsed.push({ text: content, level: level });
+        }
+        if (!parsed.length) return null;
+        var root = createNode(parsed[0].text);
+        var stack = [{ node: root, level: parsed[0].level }];
+        for (var j = 1; j < parsed.length; j++) {
+            var p = parsed[j];
+            var node = createNode(p.text);
+            while (stack.length > 1 && stack[stack.length - 1].level >= p.level) {
+                stack.pop();
+            }
+            var parent = stack[stack.length - 1].node;
+            parent.children.push(node);
+            node.depth = parent.depth + 1;
+            stack.push({ node: node, level: p.level });
+        }
+        return root;
+    }
     function renderRepo() {
         var grid = document.getElementById('repo-grid');
         var kw = document.getElementById('repo-search').value.trim().toLowerCase();
