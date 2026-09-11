@@ -90,7 +90,6 @@
         .free-textbox .tb-move{position:absolute;left:-10px;top:-10px;width:22px;height:22px;border-radius:50%;background:#5b8ff9;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:move;border:2px solid #fff;z-index:3;transform:scale(var(--inv-scale,1));transform-origin:bottom right;user-select:none}
         .free-textbox .tb-del{position:absolute;right:-10px;top:-10px;width:22px;height:22px;border-radius:50%;background:#e74c3c;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #fff;z-index:3;transform:scale(var(--inv-scale,1));transform-origin:bottom left;user-select:none}
         .free-textbox .tb-resize{position:absolute;right:-10px;bottom:-10px;width:20px;height:20px;background:#a0522d;border:2px solid #fff;border-radius:50%;cursor:nwse-resize;z-index:3;transform:scale(var(--inv-scale,1));transform-origin:top left;user-select:none}
-        #note-manage-list > div{cursor:default}
     </style>
 </head>
 <body>
@@ -201,6 +200,7 @@
     var focusStack = [];
     var currentUnderlineColor = 'red';
     var underlineClickTimer = null;
+    var createClickTimer = null;
     var STORAGE = 'mindmap_v3';
     var OLD_KEYS = ['mindmap_docs_v2', 'mindmap_docs_v3', 'mindmap_data_v1', 'mindmap_data', 'mindmap'];
 
@@ -686,290 +686,199 @@
         n.note=document.getElementById('edit-note').value.trim();
         modalEdit.classList.remove('show');
         render(); saveAll();
-    });function updateToolbar() {
-    var inner = document.getElementById('toolbar-inner');
-    var noteBar = document.getElementById('note-toolbar');
-    if (currentMode === 'create') {
-        var has = !!selectedId;
-        var node = selectedId ? getNode(selectedId) : null;
-        var canCollapse = node && node.children.length > 0;
-        var key = 'create|'+has+'|'+canCollapse;
-        if (key === lastToolbarKey) return;
-        lastToolbarKey = key;
-        inner.style.display = 'flex';
-        noteBar.classList.remove('active');
-        inner.innerHTML = '<div class="toolbar-row">'+
-            '<button class="toolbar-btn" data-a="add-child" style="opacity:'+(has?1:0.4)+'">子节点</button>'+
-            '<button class="toolbar-btn" data-a="edit" style="opacity:'+(has?1:0.4)+'">编辑</button>'+
-            '<button class="toolbar-btn" data-a="expand-node" style="opacity:'+(canCollapse?1:0.4)+'">独立展开</button>'+
-            '<button class="toolbar-btn" data-a="expand-all">全部展开</button>'+
-            '<button class="toolbar-btn" data-a="focus" style="opacity:'+(has?1:0.4)+'">聚焦</button>'+
-            '<button class="toolbar-btn" data-a="undo">撤回</button>'+
-            '</div><div class="toolbar-row">'+
-            '<button class="toolbar-btn" data-a="add-sibling" style="opacity:'+(has?1:0.4)+'">同节点</button>'+
-            '<button class="toolbar-btn" data-a="delete" style="opacity:'+(has?1:0.4)+'">删除</button>'+
-            '<button class="toolbar-btn" data-a="collapse-node" style="opacity:'+(canCollapse?1:0.4)+'">独立折叠</button>'+
-            '<button class="toolbar-btn" data-a="collapse-all">全部折叠</button>'+
-            '<button class="toolbar-btn" data-a="unfocus">返回</button>'+
-            '<button class="toolbar-btn" data-a="redo">重做</button>'+
-            '</div>';
-    } else if (currentMode === 'note') {
-        if (lastToolbarKey === 'note') return;
-        lastToolbarKey = 'note';
-        inner.style.display = 'none';
-        noteBar.classList.add('active');
-        noteBar.innerHTML = '<button class="toolbar-btn" data-a="note-manage">Note</button>'+
-            '<button class="toolbar-btn" data-a="add-textbox">便签</button>'+
-            '<button class="toolbar-btn" data-a="underline">划线</button>'+
-            '<button class="toolbar-btn" data-a="reset-layout">重置布局</button>'+
-            '<button class="toolbar-btn" data-a="undo">撤回</button>'+
-            '<button class="toolbar-btn" data-a="redo">重做</button>';
-    } else {
-        if (lastToolbarKey === 'review') return;
-        lastToolbarKey = 'review';
-        inner.style.display = 'none';
-        noteBar.classList.remove('active');
-    }
-}
-
-document.getElementById('toolbar-inner').addEventListener('click', function(e){
-    var btn = e.target.closest('.toolbar-btn'); if (!btn) return;
-    var a = btn.dataset.a;
-    if (a === 'add-child') addChild();
-    else if (a === 'add-sibling') addSibling();
-    else if (a === 'edit') showEditModal();
-    else if (a === 'delete') deleteNode();
-    else if (a === 'expand-node') expandSelected();
-    else if (a === 'collapse-node') collapseSelected();
-    else if (a === 'expand-all') { saveHistory(); allowAnim=true; (function t(n){n.collapsed=false;n.children.forEach(t);})(getRoot()); render(); saveAll(); }
-    else if (a === 'collapse-all') { saveHistory(); allowAnim=true; (function t(n){if(n.depth>0)n.collapsed=true;n.children.forEach(t);})(getRoot()); render(); saveAll(); }
-    else if (a === 'focus') { if(selectedId){ focusStack.push(currentDocId); selectNode(null); render(); } }
-    else if (a === 'unfocus') { focusStack.pop(); render(); }
-    else if (a === 'undo') undo();
-    else if (a === 'redo') redo();
-});
-
-document.getElementById('note-toolbar').addEventListener('click', function(e){
-    var btn = e.target.closest('.toolbar-btn'); if (!btn) return;
-    var a = btn.dataset.a;
-    if (a === 'undo') { undo(); return; }
-    if (a === 'redo') { redo(); return; }
-    if (a === 'note-manage') {
-        renderNoteManageList();
-        document.getElementById('modal-note').classList.add('show');
-        return;
-    }
-    if (a === 'underline') {
-        if (underlineClickTimer) {
-            clearTimeout(underlineClickTimer);
-            underlineClickTimer = null;
-            document.getElementById('modal-color').classList.add('show');
-        } else {
-            underlineClickTimer = setTimeout(function() {
-                underlineClickTimer = null;
-                if (!selectedId) { alert('请先点击要划线的节点'); return; }
-                saveHistory();
-                if (currentUnderlineColor === 'none') {
-                    delete noteMode.underlines[selectedId];
-                } else {
-                    noteMode.underlines[selectedId] = currentUnderlineColor;
-                }
-                render(); saveAll();
-            }, 250);
-        }
-        return;
-    }
-    if (a === 'add-textbox') {
-        var cx = (window.innerWidth/2 - view.panX) / view.scale;
-        var cy = (window.innerHeight/2 - view.panY) / view.scale + 50;
-        saveHistory();
-        var tb = {id:'tb'+Date.now(), noteId:noteMode.activeNoteId, x:cx, y:cy, w:150, h:60, text:'双击编辑', highlight:true};
-        noteMode.textboxes.push(tb);
-        render();
-        setTimeout(function(){ tb.highlight = false; render(); }, 2000);
-        saveAll();
-    }
-    else if (a === 'reset-layout') { saveHistory(); noteMode.nodePositions = {}; render(); saveAll(); }
-});
-
-// 颜色弹窗
-document.getElementById('modal-color').addEventListener('click', function(e){
-    var btn = e.target.closest('.modal-btn[data-color]');
-    if (!btn) return;
-    currentUnderlineColor = btn.dataset.color;
-    document.getElementById('modal-color').classList.remove('show');
-});
-document.getElementById('color-modal-close').addEventListener('click', function(){
-    document.getElementById('modal-color').classList.remove('show');
-});
-
-// Note 管理弹窗
-function renderNoteManageList() {
-    var list = document.getElementById('note-manage-list');
-    list.innerHTML = '';
-    noteMode.notes.forEach(function(n) {
-        var div = document.createElement('div');
-        var active = n.id === noteMode.activeNoteId;
-        div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #e0dcd5;border-radius:8px;margin-bottom:6px;' + (active ? 'background:#e8f0fe;border-color:#5b8ff9;' : '');
-        var name = document.createElement('span');
-        name.style.cssText = 'flex:1;cursor:pointer;font-size:14px;color:#4a3f35;' + (active ? 'font-weight:600;' : '');
-        name.textContent = n.name + (active ? ' ✓' : '');
-        name.addEventListener('click', function() {
-            noteMode.activeNoteId = n.id;
-            document.getElementById('modal-note').classList.remove('show');
-            render();
-        });
-        var renameBtn = document.createElement('button');
-        renameBtn.className = 'modal-btn';
-        renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;';
-        renameBtn.textContent = '改名';
-        renameBtn.addEventListener('click', function() {
-            var newName = prompt('新名称', n.name);
-            if (newName && newName.trim()) { n.name = newName.trim(); renderNoteManageList(); }
-        });
-        var delBtn = document.createElement('button');
-        delBtn.className = 'modal-btn';
-        delBtn.style.cssText = 'padding:4px 8px;font-size:12px;color:#e74c3c;';
-        delBtn.textContent = '删除';
-        delBtn.addEventListener('click', function() {
-            if (noteMode.notes.length <= 1) { alert('至少保留一个笔记'); return; }
-            if (!confirm('删除该笔记及其所有标注？')) return;
-            noteMode.notes = noteMode.notes.filter(function(x){ return x.id !== n.id; });
-            noteMode.textboxes = noteMode.textboxes.filter(function(t){ return t.noteId !== n.id; });
-            if (noteMode.activeNoteId === n.id) noteMode.activeNoteId = noteMode.notes[0].id;
-            renderNoteManageList();
-            render();
-        });
-        div.appendChild(name);
-        div.appendChild(renameBtn);
-        div.appendChild(delBtn);
-        list.appendChild(div);
     });
-}
-document.getElementById('note-create-btn').addEventListener('click', function() {
-    var input = document.getElementById('new-note-name');
-    var name = input.value.trim();
-    if (!name) { alert('请输入名称'); return; }
-    var id = 'nt' + Date.now();
-    noteMode.notes.push({id: id, name: name});
-    noteMode.activeNoteId = id;
-    input.value = '';
-    renderNoteManageList();
-    render();
-});
-document.getElementById('note-modal-close').addEventListener('click', function() {
-    document.getElementById('modal-note').classList.remove('show');
-});
 
-var ptr=null, sx,sy, spx,spy, drag=false, moved=false;
-var draggingNodeId=null, dragNodeOX=0, dragNodeOY=0, dragNodeSX=0, dragNodeSY=0;
+    function updateToolbar() {
+        var inner = document.getElementById('toolbar-inner');
+        var noteBar = document.getElementById('note-toolbar');
+        if (currentMode === 'create') {
+            var has = !!selectedId;
+            var node = selectedId ? getNode(selectedId) : null;
+            var canCollapse = node && node.children.length > 0;
+            var key = 'create|'+has+'|'+canCollapse;
+            if (key === lastToolbarKey) return;
+            lastToolbarKey = key;
+            inner.style.display = 'flex';
+            noteBar.classList.remove('active');
+            inner.innerHTML = '<div class="toolbar-row">'+
+                '<button class="toolbar-btn" data-a="add-child" style="opacity:'+(has?1:0.4)+'">子节点</button>'+
+                '<button class="toolbar-btn" data-a="edit" style="opacity:'+(has?1:0.4)+'">编辑</button>'+
+                '<button class="toolbar-btn" data-a="expand-node" style="opacity:'+(canCollapse?1:0.4)+'">独立展开</button>'+
+                '<button class="toolbar-btn" data-a="expand-all">全部展开</button>'+
+                '<button class="toolbar-btn" data-a="focus" style="opacity:'+(has?1:0.4)+'">聚焦</button>'+
+                '<button class="toolbar-btn" data-a="undo">撤回</button>'+
+                '</div><div class="toolbar-row">'+
+                '<button class="toolbar-btn" data-a="add-sibling" style="opacity:'+(has?1:0.4)+'">同节点</button>'+
+                '<button class="toolbar-btn" data-a="delete" style="opacity:'+(has?1:0.4)+'">删除</button>'+
+                '<button class="toolbar-btn" data-a="collapse-node" style="opacity:'+(canCollapse?1:0.4)+'">独立折叠</button>'+
+                '<button class="toolbar-btn" data-a="collapse-all">全部折叠</button>'+
+                '<button class="toolbar-btn" data-a="unfocus">返回</button>'+
+                '<button class="toolbar-btn" data-a="redo">重做</button>'+
+                '</div>';
+        } else if (currentMode === 'note') {
+            if (lastToolbarKey === 'note') return;
+            lastToolbarKey = 'note';
+            inner.style.display = 'none';
+            noteBar.classList.add('active');
+            noteBar.innerHTML = '<button class="toolbar-btn" data-a="note-manage">Note</button>'+
+                '<button class="toolbar-btn" data-a="add-textbox">便签</button>'+
+                '<button class="toolbar-btn" data-a="underline">划线</button>'+
+                '<button class="toolbar-btn" data-a="reset-layout">重置布局</button>'+
+                '<button class="toolbar-btn" data-a="undo">撤回</button>'+
+                '<button class="toolbar-btn" data-a="redo">重做</button>';
+        } else {
+            if (lastToolbarKey === 'review') return;
+            lastToolbarKey = 'review';
+            inner.style.display = 'none';
+            noteBar.classList.remove('active');
+        }
+    }
 
-container.addEventListener('pointerdown',function(e){
-    var nodeBox = e.target.closest('.node-box');
-    if (nodeBox && currentMode === 'note') {
-        var nid = nodeBox.dataset.nid;
-        if (nid) {
-            var n = getNode(nid);
-            if (n) {
-                selectNode(nid);
-                if (!noteMode.nodePositions[nid]) noteMode.nodePositions[nid] = {x:n.x, y:n.y};
-                draggingNodeId = nid;
-                dragNodeOX = noteMode.nodePositions[nid].x;
-                dragNodeOY = noteMode.nodePositions[nid].y;
-                dragNodeSX = e.clientX;
-                dragNodeSY = e.clientY;
-                ptr = e.pointerId;
-                moved = false;
-                container.setPointerCapture(e.pointerId);
-                e.preventDefault();
-                return;
+    document.getElementById('toolbar-inner').addEventListener('click', function(e){
+        var btn = e.target.closest('.toolbar-btn'); if (!btn) return;
+        var a = btn.dataset.a;
+        if (a === 'add-child') addChild();
+        else if (a === 'add-sibling') addSibling();
+        else if (a === 'edit') showEditModal();
+        else if (a === 'delete') deleteNode();
+        else if (a === 'expand-node') expandSelected();
+        else if (a === 'collapse-node') collapseSelected();
+        else if (a === 'expand-all') { saveHistory(); allowAnim=true; (function t(n){n.collapsed=false;n.children.forEach(t);})(getRoot()); render(); saveAll(); }
+        else if (a === 'collapse-all') { saveHistory(); allowAnim=true; (function t(n){if(n.depth>0)n.collapsed=true;n.children.forEach(t);})(getRoot()); render(); saveAll(); }
+        else if (a === 'focus') { if(selectedId){ focusStack.push(currentDocId); selectNode(null); render(); } }
+        else if (a === 'unfocus') { focusStack.pop(); render(); }
+        else if (a === 'undo') undo();
+        else if (a === 'redo') redo();
+    });
+
+    document.getElementById('note-toolbar').addEventListener('click', function(e){
+        var btn = e.target.closest('.toolbar-btn'); if (!btn) return;
+        var a = btn.dataset.a;
+        if (a === 'undo') { undo(); return; }
+        if (a === 'redo') { redo(); return; }
+        if (a === 'note-manage') {
+            renderNoteManageList();
+            document.getElementById('modal-note').classList.add('show');
+            return;
+        }
+        if (a === 'underline') {
+            if (underlineClickTimer) {
+                clearTimeout(underlineClickTimer);
+                underlineClickTimer = null;
+                document.getElementById('modal-color').classList.add('show');
+            } else {
+                underlineClickTimer = setTimeout(function() {
+                    underlineClickTimer = null;
+                    if (!selectedId) { alert('请先点击要划线的节点'); return; }
+                    saveHistory();
+                    if (currentUnderlineColor === 'none') {
+                        delete noteMode.underlines[selectedId];
+                    } else {
+                        noteMode.underlines[selectedId] = currentUnderlineColor;
+                    }
+                    render(); saveAll();
+                }, 250);
             }
+            return;
         }
-    }
-    if(e.target.closest('.free-textbox')) return;
-    ptr=e.pointerId; sx=e.clientX; sy=e.clientY; spx=view.panX; spy=view.panY;
-    drag=false; moved=false;
-    container.setPointerCapture(e.pointerId);
-});
-container.addEventListener('pointermove',function(e){
-    if(e.pointerId!==ptr)return;
-    if (draggingNodeId) {
-        var dxN = e.clientX - dragNodeSX, dyN = e.clientY - dragNodeSY;
-        if (Math.abs(dxN) > 3 || Math.abs(dyN) > 3) moved = true;
-        var nPos = noteMode.nodePositions[draggingNodeId];
-        nPos.x = dragNodeOX + dxN/view.scale;
-        nPos.y = dragNodeOY + dyN/view.scale;
-        render();
-        return;
-    }
-    var dx=e.clientX-sx, dy=e.clientY-sy;
-    if(Math.sqrt(dx*dx+dy*dy)>5){drag=true;moved=true;}
-    if(drag){ view.panX=spx+dx; view.panY=spy+dy; render(); }
-});
-container.addEventListener('pointerup',function(e){
-    if(e.pointerId!==ptr)return;
-    if (draggingNodeId) {
-        if (moved) { saveHistory(); saveAll(); }
-        draggingNodeId = null;
-    } else if(!moved && !e.target.closest('.node-box')) {
-        selectNode(null);
-    }
-    ptr=null; drag=false; moved=false;
-});
-container.addEventListener('wheel',function(e){
-    e.preventDefault();
-    var d=e.deltaY>0?-0.08:0.08;
-    var ns=Math.max(0.15,Math.min(3,view.scale+d));
-    var r=ns/view.scale;
-    view.scale=ns;
-    view.panX=e.clientX-(e.clientX-view.panX)*r;
-    view.panY=e.clientY-(e.clientY-view.panY)*r;
-    render();
-},{passive:false});
-
-var lastTD=0;
-container.addEventListener('touchstart',function(e){
-    if(e.touches.length===2){
-        var dx=e.touches[0].clientX-e.touches[1].clientX;
-        var dy=e.touches[0].clientY-e.touches[1].clientY;
-        lastTD=Math.sqrt(dx*dx+dy*dy);
-    }
-},{passive:true});
-container.addEventListener('touchmove',function(e){
-    if(e.touches.length===2){
-        e.preventDefault();
-        var dx=e.touches[0].clientX-e.touches[1].clientX;
-        var dy=e.touches[0].clientY-e.touches[1].clientY;
-        var nd=Math.sqrt(dx*dx+dy*dy);
-        if(lastTD>0){
-            var sc=nd/lastTD;
-            var ns=Math.max(0.15,Math.min(3,view.scale*sc));
-            var r=ns/view.scale;
-            view.scale=ns;
-            var cx=(e.touches[0].clientX+e.touches[1].clientX)/2;
-            var cy=(e.touches[0].clientY+e.touches[1].clientY)/2;
-            view.panX=cx-(cx-view.panX)*r;
-            view.panY=cy-(cy-view.panY)*r;
+        if (a === 'add-textbox') {
+            var cx = (window.innerWidth/2 - view.panX) / view.scale;
+            var cy = (window.innerHeight/2 - view.panY) / view.scale + 50;
+            saveHistory();
+            var tb = {id:'tb'+Date.now(), noteId:noteMode.activeNoteId, x:cx, y:cy, w:150, h:60, text:'双击编辑', highlight:true};
+            noteMode.textboxes.push(tb);
             render();
+            setTimeout(function(){ tb.highlight = false; render(); }, 2000);
+            saveAll();
         }
-        lastTD=nd;
-    }
-},{passive:false});
+        else if (a === 'reset-layout') { saveHistory(); noteMode.nodePositions = {}; render(); saveAll(); }
+    });
 
-document.getElementById('mode-switcher').addEventListener('click',function(e){
-    var btn=e.target.closest('.mode-btn'); if(!btn)return;
-    document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active');
-    currentMode=btn.dataset.mode;
-    selectedId=null;
-    lastToolbarKey = '';
-    if(currentMode==='note' && !noteMode.activeNoteId){
-        var id='nt'+Date.now();
-        noteMode.notes.push({id:id,name:'笔记1'});
-        noteMode.activeNoteId=id;
+    document.getElementById('modal-color').addEventListener('click', function(e){
+        var btn = e.target.closest('.modal-btn[data-color]');
+        if (!btn) return;
+        currentUnderlineColor = btn.dataset.color;
+        document.getElementById('modal-color').classList.remove('show');
+    });
+    document.getElementById('color-modal-close').addEventListener('click', function(){
+        document.getElementById('modal-color').classList.remove('show');
+    });
+
+    function renderNoteManageList() {
+        var list = document.getElementById('note-manage-list');
+        list.innerHTML = '';
+        noteMode.notes.forEach(function(n) {
+            var div = document.createElement('div');
+            var active = n.id === noteMode.activeNoteId;
+            div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #e0dcd5;border-radius:8px;margin-bottom:6px;' + (active ? 'background:#e8f0fe;border-color:#5b8ff9;' : '');
+            var name = document.createElement('span');
+            name.style.cssText = 'flex:1;cursor:pointer;font-size:14px;color:#4a3f35;' + (active ? 'font-weight:600;' : '');
+            name.textContent = n.name + (active ? ' ✓' : '');
+            name.addEventListener('click', function() {
+                noteMode.activeNoteId = n.id;
+                document.getElementById('modal-note').classList.remove('show');
+                render();
+            });
+            var renameBtn = document.createElement('button');
+            renameBtn.className = 'modal-btn';
+            renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;';
+            renameBtn.textContent = '改名';
+            renameBtn.addEventListener('click', function() {
+                var newName = prompt('新名称', n.name);
+                if (newName && newName.trim()) { n.name = newName.trim(); renderNoteManageList(); }
+            });
+            var delBtn = document.createElement('button');
+            delBtn.className = 'modal-btn';
+            delBtn.style.cssText = 'padding:4px 8px;font-size:12px;color:#e74c3c;';
+            delBtn.textContent = '删除';
+            delBtn.addEventListener('click', function() {
+                if (noteMode.notes.length <= 1) { alert('至少保留一个笔记'); return; }
+                if (!confirm('删除该笔记及其所有标注？')) return;
+                noteMode.notes = noteMode.notes.filter(function(x){ return x.id !== n.id; });
+                noteMode.textboxes = noteMode.textboxes.filter(function(t){ return t.noteId !== n.id; });
+                if (noteMode.activeNoteId === n.id) noteMode.activeNoteId = noteMode.notes[0].id;
+                renderNoteManageList();
+                render();
+            });
+            div.appendChild(name);
+            div.appendChild(renameBtn);
+            div.appendChild(delBtn);
+            list.appendChild(div);
+        });
     }
-    render(); updateToolbar();
-});    var pages = {home:'home-page', repo:'repo-page', folder:'folder-page', quote:'quote-edit-page', edit:'edit-page'};
+    document.getElementById('note-create-btn').addEventListener('click', function() {
+        var input = document.getElementById('new-note-name');
+        var name = input.value.trim();
+        if (!name) { alert('请输入名称'); return; }
+        var id = 'nt' + Date.now();
+        noteMode.notes.push({id: id, name: name});
+        noteMode.activeNoteId = id;
+        input.value = '';
+        renderNoteManageList();
+        render();
+    });
+    document.getElementById('note-modal-close').addEventListener('click', function() {
+        document.getElementById('modal-note').classList.remove('show');
+    });
+
+    var ptr=null, sx,sy, spx,spy, drag=false, moved=false;
+    var draggingNodeId=null, dragNodeOX=0, dragNodeOY=0, dragNodeSX=0, dragNodeSY=0;
+
+    container.addEventListener('pointerdown',function(e){
+        var nodeBox = e.target.closest('.node-box');
+        if (nodeBox && currentMode === 'note') {
+            var nid = nodeBox.dataset.nid;
+            if (nid) {
+                var n = getNode(nid);
+                if (n) {
+                    selectNode(nid);
+                    if (!noteMode.nodePositions[nid]) noteMode.nodePositions[nid] = {x:n.x, y:n.y};
+                    draggingNodeId = nid;
+                    dragNodeOX = noteMode.nodePositions[nid].x;
+                    dragNodeOY = noteMode.nodePositions[nid].y;
+                    dragNodeSX = e.clientX;
+                    dragNodeSY = e.clientY;
+                    ptr = e.pointer    var pages = {home:'home-page', repo:'repo-page', folder:'folder-page', quote:'quote-edit-page', edit:'edit-page'};
     var currentPage = 'home';
     function goPage(name) {
         Object.keys(pages).forEach(function(k){ document.getElementById(pages[k]).classList.remove('active'); });
@@ -992,10 +901,22 @@ document.getElementById('mode-switcher').addEventListener('click',function(e){
         document.getElementById('quote-text').textContent = q.text;
         document.getElementById('quote-author').textContent = '—— ' + q.author;
     }
-    document.getElementById('create-btn').addEventListener('click',function(){
-        if (currentDocId && docs.find(function(d){ return d.id===currentDocId; })) openDoc(currentDocId);
-        else createNewDoc();
+
+    // 单击打开上次，双击新建
+    document.getElementById('create-btn').addEventListener('click', function() {
+        if (createClickTimer) {
+            clearTimeout(createClickTimer);
+            createClickTimer = null;
+            createNewDoc();
+        } else {
+            createClickTimer = setTimeout(function() {
+                createClickTimer = null;
+                if (currentDocId && docs.find(function(d){ return d.id===currentDocId; })) openDoc(currentDocId);
+                else createNewDoc();
+            }, 250);
+        }
     });
+
     function createNewDoc() {
         var doc = {id:'d'+Date.now(), name:'未命名导图', root:createNode('中心主题'), folderId:null, updatedAt:Date.now()};
         docs.push(doc); currentDocId = doc.id; saveAll(); openDoc(doc.id);
