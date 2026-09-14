@@ -96,8 +96,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .free-textbox .tb-del{position:absolute;right:-10px;top:-10px;width:22px;height:22px;border-radius:50%;background:#e74c3c;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #fff;z-index:3;transform:scale(var(--inv-scale,1));transform-origin:bottom left;user-select:none}
 .free-textbox .tb-resize{position:absolute;right:-10px;bottom:-10px;width:20px;height:20px;background:#a0522d;border:2px solid #fff;border-radius:50%;cursor:nwse-resize;z-index:3;transform:scale(var(--inv-scale,1));transform-origin:top left;user-select:none}
 </style>
-</head>
-<body>
+</head><body>
 <div id="home-page" class="page active"><div id="quote-container"><div id="quote-text"></div><div id="quote-author"></div></div><button id="create-btn">Create</button></div>
 <div id="repo-page" class="page">
 <div class="page-topbar" style="position:relative;">
@@ -148,8 +147,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 <div id="modal-import" class="modal-overlay"><div class="modal-box"><h3>📥 导入纯文本</h3><p style="font-size:12px;color:#8b7d6b;margin-bottom:8px;">支持缩进、Markdown、编号等，第一行作为根节点</p><textarea id="import-textarea" placeholder="示例：&#10;学习方法&#10;  记忆原理&#10;    间隔重复" style="min-height:200px;font-family:monospace;"></textarea><div class="modal-actions"><button class="modal-btn" id="import-cancel">取消</button><button class="modal-btn primary" id="import-confirm">生成导图</button></div></div></div>
 <div id="modal-export" class="modal-overlay"><div class="modal-box" style="max-width:320px;"><h3>导出为</h3><button class="modal-btn" id="export-json-btn" style="width:100%;margin-bottom:8px;justify-content:center;">JSON（可再次导入）</button><button class="modal-btn" id="export-png-btn" style="width:100%;margin-bottom:8px;justify-content:center;">PNG 图片</button><div class="modal-actions"><button class="modal-btn primary" id="export-cancel">取消</button></div></div></div>
 <div id="context-menu"></div>
-<div id="note-popup"></div>
-<script>(function(){
+<div id="note-popup"></div><script>(function(){
 var docs = [];
 var folders = [];
 var quotes = [];
@@ -186,10 +184,37 @@ function getNode(id){return currentNodeMap.get(id)||null;}
 function buildNodeMap(){var root=getRoot();if(!root)return;currentNodeMap.clear();(function t(n,p){n.depth=p?p.depth+1:0;n.parentId=p?p.id:null;currentNodeMap.set(n.id,n);n.children.forEach(function(c){t(c,n);});})(root,null);}
 function getVisible(){var root=getRoot();if(!root)return[];var r=[];(function t(n){r.push(n);if(!n.collapsed)n.children.forEach(t);})(root);return r;}
 function estimateWidth(n){var fs=n.depth===0?16:14;var raw=n.text.length*fs*0.6+32;return Math.max(Math.min(raw,200),80);}
-function baseDist(d){return d===0?0:d===1?170:d===2?145:125;}
-function reqDist(parent,children,s,e,depth){if(!children.length)return baseDist(depth);var widths=children.map(function(c){return c._w;});var totalAngle=(e-s)*Math.PI/180;var minD=0;var perAngle=totalAngle/children.length;for(var i=0;i<widths.length;i++){var rd=(widths[i]+20)/Math.max(perAngle,0.1);if(rd>minD)minD=rd;}var pW=parent._w,mW=Math.max.apply(null,widths);return Math.max(baseDist(depth),minD,(pW+mW)/2+20);}
+function estimateHeight(n){var fs=n.depth===0?16:14;var w=estimateWidth(n);var innerW=w-32;var charW=fs*0.9;var charsPerLine=Math.max(1,Math.floor(innerW/charW));var lines=Math.ceil(n.text.length/charsPerLine);var lineH=fs*1.5;return Math.max(36,lines*lineH+16);}
+function baseDist(d){return d===0?0:d===1?200:d===2?170:d===3?145:130;}
+function reqDist(parent,children,s,e,depth){if(!children.length)return baseDist(depth);var totalAngle=(e-s)*Math.PI/180;var perAngle=Math.max(totalAngle/children.length,0.02);var minR=baseDist(depth);for(var i=0;i<children.length;i++){var need=(children[i]._w+30)/perAngle;if(need>minR)minR=need;}var pW=parent._w||100,maxCW=0;for(var j=0;j<children.length;j++){if(children[j]._w>maxCW)maxCW=children[j]._w;}var minEdge=(pW+maxCW)/2+40;if(minEdge>minR)minR=minEdge;return minR;}
 function calcRadialLayout(root){(function as(n,s,e){n.sectorStart=s;n.sectorEnd=e;var cnt=n.children.length;if(!cnt)return;var per=(e-s)/cnt;for(var i=0;i<cnt;i++){var c=n.children[i];c.angle=s+i*per+per/2;as(c,s+i*per,s+i*per+per);}})(root,0,360);(function cp(n,px,py){if(n.depth===0){n.x=0;n.y=0;}else{var p=getNode(n.parentId);if(p){var d=reqDist(p,p.children,p.sectorStart,p.sectorEnd,n.depth);var r=(n.angle-90)*Math.PI/180;n.x=px+Math.cos(r)*d;n.y=py+Math.sin(r)*d;}}if(!n.collapsed)n.children.forEach(function(c){cp(c,n.x,n.y);});})(root,0,0);}
-function calcTreeLayout(root){(function calcH(n){if(n.collapsed||n.children.length===0){n._th=1;return 1;}var total=0;n.children.forEach(function(c){total+=calcH(c);});n._th=total;return total;})(root);var V=70;var HG=200;(function pos(n,x,yTop){n.x=x;n.y=yTop+n._th*V/2;if(n.collapsed||n.children.length===0)return;var cy=yTop;n.children.forEach(function(c){pos(c,x+HG,cy);cy+=c._th*V;});})(root,0,0);var offset=root.y;(function shift(n){n.y-=offset;n.children.forEach(shift);})(root);}
+function calcTreeLayout(root){
+  var V_GAP=22;
+  var H_GAP=64;
+  (function measure(n){
+    n._w=estimateWidth(n);
+    n._h=estimateHeight(n);
+    if(n.collapsed||n.children.length===0){n._subH=n._h;return n._subH;}
+    var total=0;
+    n.children.forEach(function(c,i){total+=measure(c);if(i<n.children.length-1)total+=V_GAP;});
+    n._subH=Math.max(n._h,total);
+    return n._subH;
+  })(root);
+  (function place(n,xLeft,yTop){
+    n.x=xLeft+n._w/2;
+    n.y=yTop+n._subH/2;
+    if(n.collapsed||n.children.length===0)return;
+    var chTotal=0;
+    n.children.forEach(function(c,i){chTotal+=c._subH;if(i<n.children.length-1)chTotal+=V_GAP;});
+    var cy=yTop+(n._subH-chTotal)/2;
+    n.children.forEach(function(c){
+      place(c,xLeft+n._w+H_GAP,cy);
+      cy+=c._subH+V_GAP;
+    });
+  })(root,0,0);
+  var offset=root.y;
+  (function shift(n){n.y-=offset;n.children.forEach(shift);})(root);
+}
 function calcLayout(){var root=getRoot();if(!root)return;(function w(n){n._w=estimateWidth(n);n.children.forEach(w);})(root);if(currentLayout==='tree'){calcTreeLayout(root);}else{calcRadialLayout(root);}}
 var container=document.getElementById('canvas-container');
 var svgLayer=document.getElementById('svg-layer');
