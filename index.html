@@ -22,10 +22,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .page-topbar{height:56px;background:#fff;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid #e0dcd5;gap:8px}
 .search-input{flex:1;border:1.5px solid #e0dcd5;border-radius:20px;padding:8px 14px;font-size:14px;outline:none;background:#f9f7f3;color:#4a3f35}
 .search-toggle{min-width:70px;height:36px;border-radius:18px;border:1.5px solid #a0522d;background:#fff;color:#a0522d;font-size:12px;font-weight:600;cursor:pointer;padding:0 10px}
-#repo-grid{flex:1;overflow-y:auto;padding:12px;padding-bottom:80px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
-.doc-card{background:#fff;border-radius:12px;overflow:hidden;border:2.5px solid #ccc;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;position:relative}
+#repo-grid{flex:1;overflow-y:auto;padding:12px;padding-bottom:80px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start;grid-auto-rows:minmax(150px,auto)}
+.doc-card{background:#fff;border-radius:12px;overflow:hidden;border:2.5px solid #ccc;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;position:relative;display:flex;flex-direction:column;min-height:150px}
 .doc-thumb{height:100px;background:#f0ece4;display:flex;align-items:center;justify-content:center;font-size:36px;color:#c5b8a8}
-.doc-card-footer{display:flex;align-items:center;padding:8px 10px;gap:4px}
+.doc-card-footer{display:flex;align-items:center;padding:8px 10px;gap:4px;min-height:40px;flex-shrink:0}
 .doc-card-name{flex:1;font-size:13px;color:#4a3f35;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .doc-more{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#8b7d6b;cursor:pointer}
 #folder-page{background:#f5f0e6}
@@ -78,6 +78,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .modal-box{background:#fff;border-radius:16px;padding:18px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;overflow-y:auto}
 .modal-box h3{font-size:16px;margin-bottom:12px;color:#4a3f35}
 .modal-box input,.modal-box textarea{width:100%;border:1.5px solid #e0dcd5;border-radius:10px;padding:10px;font-size:14px;outline:none;margin-bottom:8px;color:#4a3f35}
+.modal-box input::placeholder,.modal-box textarea::placeholder{color:#c0c0c0;opacity:1;font-style:normal}
 .modal-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap}
 .modal-btn{padding:9px 16px;border-radius:8px;border:1px solid #d0d5dd;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#4a3f35}
 .modal-btn.primary{background:#a0522d;color:#fff;border-color:#a0522d}
@@ -170,6 +171,8 @@ var currentUnderlineColor = 'red';
 var underlineClickTimer = null;
 var createClickTimer = null;
 var exportDocId = null;
+var collapseClickTimer = null;
+var expandClickTimer = null;
 var STORAGE = 'mindmap_v3';
 var OLD_KEYS = ['mindmap_docs_v2','mindmap_docs_v3','mindmap_data_v1','mindmap_data','mindmap'];
 function serializeNode(n){return{id:n.id,text:n.text,collapsed:n.collapsed||false,link:n.link||'',color:n.color||'',note:n.note||'',children:n.children.map(serializeNode)};}
@@ -273,34 +276,61 @@ function selectNode(id){selectedId=id;render();updateToolbar();}
 function saveHistory(){var doc=getCurrentDoc();if(!doc)return;var snap=JSON.stringify({root:doc.root,note:noteMode});if(historyIndex<history.length-1)history=history.slice(0,historyIndex+1);history.push(snap);if(history.length>50)history.shift();historyIndex=history.length-1;}
 function undo(){if(historyIndex<=0)return;historyIndex--;var d=getCurrentDoc();if(d){var s=JSON.parse(history[historyIndex]);d.root=s.root;noteMode=s.note;buildNodeMap();selectedId=null;render();saveAll();updateToolbar();}}
 function redo(){if(historyIndex>=history.length-1)return;historyIndex++;var d=getCurrentDoc();if(d){var s=JSON.parse(history[historyIndex]);d.root=s.root;noteMode=s.note;buildNodeMap();selectedId=null;render();saveAll();updateToolbar();}}
-function addChild(){if(!selectedId)return;var p=getNode(selectedId);if(!p)return;saveHistory();var n=createNode('新节点',p.id);p.children.push(n);buildNodeMap();selectNode(n.id);saveAll();setTimeout(showEditModal,100);}
-function addSibling(){if(!selectedId)return;var n=getNode(selectedId);if(!n||!n.parentId)return;var p=getNode(n.parentId);if(!p)return;saveHistory();var nn=createNode('新节点',p.id);var idx=p.children.indexOf(n);p.children.splice(idx+1,0,nn);buildNodeMap();selectNode(nn.id);saveAll();setTimeout(showEditModal,100);}
+function addChild(){if(!selectedId)return;var p=getNode(selectedId);if(!p)return;saveHistory();var n=createNode('新节点',p.id);p.children.push(n);buildNodeMap();selectNode(n.id);saveAll();}
+function addSibling(){if(!selectedId)return;var n=getNode(selectedId);if(!n||!n.parentId)return;var p=getNode(n.parentId);if(!p)return;saveHistory();var nn=createNode('新节点',p.id);var idx=p.children.indexOf(n);p.children.splice(idx+1,0,nn);buildNodeMap();selectNode(nn.id);saveAll();}
 function deleteNode(){if(!selectedId)return;var n=getNode(selectedId);if(!n||!n.parentId)return;var p=getNode(n.parentId);saveHistory();p.children=p.children.filter(function(c){return c.id!==selectedId;});selectedId=null;buildNodeMap();render();saveAll();}
-function expandSelected(){if(!selectedId)return;var n=getNode(selectedId);if(!n||!n.children.length)return;saveHistory();allowAnim=true;n.collapsed=false;render();saveAll();}
-function collapseSelected(){if(!selectedId)return;var n=getNode(selectedId);if(!n||!n.children.length)return;saveHistory();allowAnim=true;n.collapsed=true;render();saveAll();}
 function resetView(){view.scale=1;view.panX=window.innerWidth/2;view.panY=(container.clientHeight||(window.innerHeight-50))/2;render();}
 var modalEdit=document.getElementById('modal-edit');
-function showEditModal(){if(!selectedId)return;var n=getNode(selectedId);if(!n)return;var editInput=document.getElementById('edit-text');editInput.value=n.text;document.getElementById('edit-link').value=n.link||'';document.getElementById('edit-color').value=n.color||'#ffffff';document.getElementById('edit-note').value=n.note||'';modalEdit.classList.add('show');setTimeout(function(){editInput.focus();editInput.select();},50);}
+function showEditModal(){
+    if(!selectedId)return;
+    var n=getNode(selectedId);if(!n)return;
+    var editInput=document.getElementById('edit-text');
+    if(n.text==='新节点'){
+        editInput.value='';
+        editInput.placeholder='新节点';
+    } else {
+        editInput.value=n.text;
+        editInput.placeholder='节点文字';
+    }
+    document.getElementById('edit-link').value=n.link||'';
+    document.getElementById('edit-color').value=n.color||'#ffffff';
+    document.getElementById('edit-note').value=n.note||'';
+    modalEdit.classList.add('show');
+    setTimeout(function(){editInput.focus();},50);
+}
 document.getElementById('edit-cancel').addEventListener('click',function(){modalEdit.classList.remove('show');});
-document.getElementById('edit-save').addEventListener('click',function(){if(!selectedId)return;var n=getNode(selectedId);if(!n)return;var t=document.getElementById('edit-text').value.trim();if(!t)return;saveHistory();n.text=t;n.link=document.getElementById('edit-link').value.trim();n.color=document.getElementById('edit-color').value;n.note=document.getElementById('edit-note').value.trim();modalEdit.classList.remove('show');render();saveAll();});function updateToolbar(){
+document.getElementById('edit-save').addEventListener('click',function(){
+    if(!selectedId)return;
+    var n=getNode(selectedId);if(!n)return;
+    var t=document.getElementById('edit-text').value.trim();
+    if(!t){
+        modalEdit.classList.remove('show');
+        return;
+    }
+    saveHistory();
+    n.text=t;
+    n.link=document.getElementById('edit-link').value.trim();
+    n.color=document.getElementById('edit-color').value;
+    n.note=document.getElementById('edit-note').value.trim();
+    modalEdit.classList.remove('show');
+    render();saveAll();
+});function updateToolbar(){
 var inner=document.getElementById('toolbar-inner');var noteBar=document.getElementById('note-toolbar');
 if(currentMode==='create'){
 var has=!!selectedId;var node=selectedId?getNode(selectedId):null;var canCollapse=node&&node.children.length>0;
-var key='create|'+has+'|'+canCollapse+'|'+currentLayout;
+var key='create|'+has+'|'+currentLayout+'|'+(focusNodeId?'f':'n');
 if(key===lastToolbarKey)return;lastToolbarKey=key;
 inner.style.display='flex';noteBar.classList.remove('active');
 inner.innerHTML='<div class="toolbar-row">'+
 '<button class="toolbar-btn" data-a="add-child" style="opacity:'+(has?1:0.4)+'">子节点</button>'+
 '<button class="toolbar-btn" data-a="edit" style="opacity:'+(has?1:0.4)+'">编辑</button>'+
-'<button class="toolbar-btn" data-a="expand-node" style="opacity:'+(canCollapse?1:0.4)+'">独立展开</button>'+
-'<button class="toolbar-btn" data-a="expand-all">全部展开</button>'+
+'<button class="toolbar-btn" data-a="collapse-btn">折叠</button>'+
 '<button class="toolbar-btn" data-a="focus" style="opacity:'+(has?1:0.4)+'">聚焦</button>'+
 '<button class="toolbar-btn" data-a="undo">撤回</button>'+
 '</div><div class="toolbar-row">'+
 '<button class="toolbar-btn" data-a="add-sibling" style="opacity:'+(has?1:0.4)+'">同节点</button>'+
 '<button class="toolbar-btn" data-a="delete" style="opacity:'+(has?1:0.4)+'">删除</button>'+
-'<button class="toolbar-btn" data-a="collapse-node" style="opacity:'+(canCollapse?1:0.4)+'">独立折叠</button>'+
-'<button class="toolbar-btn" data-a="collapse-all">全部折叠</button>'+
+'<button class="toolbar-btn" data-a="expand-btn">展开</button>'+
 '<button class="toolbar-btn" data-a="unfocus" style="opacity:'+(focusNodeId?1:0.4)+'">返回</button>'+
 '<button class="toolbar-btn" data-a="redo">重做</button>'+
 '</div>';
@@ -324,14 +354,30 @@ if(a==='add-child')addChild();
 else if(a==='add-sibling')addSibling();
 else if(a==='edit')showEditModal();
 else if(a==='delete')deleteNode();
-else if(a==='expand-node')expandSelected();
-else if(a==='collapse-node')collapseSelected();
-else if(a==='expand-all'){saveHistory();allowAnim=true;(function t(n){n.collapsed=false;n.children.forEach(t);})(getRoot());render();saveAll();}
-else if(a==='collapse-all'){saveHistory();allowAnim=true;(function t(n){if(n.depth>0)n.collapsed=true;n.children.forEach(t);})(getRoot());render();saveAll();}
 else if(a==='focus'){if(selectedId){focusStack.push(focusNodeId||'root');focusNodeId=selectedId;selectedId=null;buildNodeMap();resetView();updateToolbar();}}
 else if(a==='unfocus'){if(focusStack.length>0){focusNodeId=focusStack.pop();if(focusNodeId==='root')focusNodeId=null;}else{focusNodeId=null;}selectedId=null;buildNodeMap();resetView();updateToolbar();}
 else if(a==='undo')undo();
 else if(a==='redo')redo();
+else if(a==='collapse-btn'){
+    if(collapseClickTimer){clearTimeout(collapseClickTimer);collapseClickTimer=null;
+        saveHistory();allowAnim=true;(function t(n){if(n.depth>0)n.collapsed=true;n.children.forEach(t);})(getRoot());render();saveAll();
+    } else {
+        collapseClickTimer=setTimeout(function(){collapseClickTimer=null;
+            if(!selectedId)return;var n=getNode(selectedId);if(!n||!n.children.length)return;
+            saveHistory();allowAnim=true;n.collapsed=true;render();saveAll();
+        },300);
+    }
+}
+else if(a==='expand-btn'){
+    if(expandClickTimer){clearTimeout(expandClickTimer);expandClickTimer=null;
+        saveHistory();allowAnim=true;(function t(n){n.collapsed=false;n.children.forEach(t);})(getRoot());render();saveAll();
+    } else {
+        expandClickTimer=setTimeout(function(){expandClickTimer=null;
+            if(!selectedId)return;var n=getNode(selectedId);if(!n||!n.children.length)return;
+            saveHistory();allowAnim=true;n.collapsed=false;render();saveAll();
+        },300);
+    }
+}
 });
 document.getElementById('note-toolbar').addEventListener('click',function(e){
 var btn=e.target.closest('.toolbar-btn');if(!btn)return;var a=btn.dataset.a;
@@ -455,6 +501,7 @@ function createNewDoc(){var doc={id:'d'+Date.now(),name:'未命名导图',root:c
 function openDoc(id){currentDocId=id;var doc=getCurrentDoc();if(!doc)return;doc.updatedAt=Date.now();document.getElementById('edit-doc-name').textContent=doc.name;focusNodeId=null;focusStack=[];buildNodeMap();history=[JSON.stringify({root:doc.root,note:noteMode})];historyIndex=0;currentMode='create';lastToolbarKey='';if(typeof updateModeMenu==='function')updateModeMenu();goPage('edit');setTimeout(function(){resetView();updateToolbar();},50);saveAll();}
 document.getElementById('back-btn').addEventListener('click',function(){saveAll();goPage('home');});
 var searchMode='name';
+document.getElementById('repo-search').addEventListener('input',renderRepo);
 document.getElementById('search-toggle').addEventListener('click',function(e){e.stopPropagation();var menu=document.getElementById('search-menu');menu.style.display=menu.style.display==='block'?'none':'block';});
 document.getElementById('search-menu').addEventListener('click',function(e){var item=e.target.closest('.search-menu-item');if(!item)return;var mode=item.dataset.mode;document.getElementById('search-menu').style.display='none';if(mode==='name'){searchMode='name';document.getElementById('search-toggle').textContent='名称 ▾';renderRepo();}else if(mode==='content'){searchMode='content';document.getElementById('search-toggle').textContent='内容 ▾';renderRepo();}else if(mode==='import'){showImportModal();}});
 document.addEventListener('click',function(e){if(!e.target.closest('#search-menu')&&!e.target.closest('#search-toggle')){document.getElementById('search-menu').style.display='none';}});
@@ -564,22 +611,18 @@ function renderRepo(){
         card.className='doc-card';
         var cnt=0;
         (function t(n){cnt++;n.children.forEach(t);})(d.root);
-        var borderColor=cnt<=5?'#ccc':cnt<=15?'#5b8ff9':cnt<=30?'#27ae60':cnt<=50?'#e67e22':'#e74c3c';
+        var borderColor=cnt<=5?'#bbb':cnt<=15?'#5b8ff9':cnt<=30?'#27ae60':cnt<=50?'#e67e22':'#e74c3c';
         card.style.borderColor=borderColor;
-
         var thumb=document.createElement('div');
         thumb.className='doc-thumb';
         thumb.textContent='🧠';
         card.appendChild(thumb);
-
         var footer=document.createElement('div');
         footer.className='doc-card-footer';
-
         var nameEl=document.createElement('span');
         nameEl.className='doc-card-name';
         nameEl.textContent=d.name||'未命名导图';
         footer.appendChild(nameEl);
-
         var moreEl=document.createElement('span');
         moreEl.className='doc-more';
         moreEl.textContent='⋮';
@@ -588,9 +631,7 @@ function renderRepo(){
             showContextMenu(e,d.id);
         });
         footer.appendChild(moreEl);
-
         card.appendChild(footer);
-
         card.addEventListener('click',function(e){
             if(!e.target.closest('.doc-more'))openDoc(d.id);
         });
