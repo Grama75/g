@@ -124,7 +124,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 <span id="edit-doc-name"></span>
 <div id="mode-switcher" style="position:relative;">
 <button id="mode-main-btn" style="padding:5px 10px;border-radius:14px;border:1.5px solid #d0d5dd;background:#fff;font-size:12px;font-weight:600;color:#8b6b4a;cursor:pointer;">编辑 ▾</button>
-<div id="mode-menu" style="display:none;position:absolute;top:38px;left:0;background:#fff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:140px;z-index:300;overflow:hidden;">
+<div id="mode-menu" style="display:none;position:absolute;top:38px;left:0;background:#fff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:150px;z-index:300;overflow:hidden;">
 <div class="mode-menu-item" data-mode="create">编辑</div>
 <div class="mode-menu-item" data-mode="note">笔记</div>
 <div class="mode-menu-item" data-mode="review">复习</div>
@@ -185,37 +185,123 @@ function buildNodeMap(){var root=getRoot();if(!root)return;currentNodeMap.clear(
 function getVisible(){var root=getRoot();if(!root)return[];var r=[];(function t(n){r.push(n);if(!n.collapsed)n.children.forEach(t);})(root);return r;}
 function estimateWidth(n){var fs=n.depth===0?16:14;var raw=n.text.length*fs*0.6+32;return Math.max(Math.min(raw,200),80);}
 function estimateHeight(n){var fs=n.depth===0?16:14;var w=estimateWidth(n);var innerW=w-32;var charW=fs*0.9;var charsPerLine=Math.max(1,Math.floor(innerW/charW));var lines=Math.ceil(n.text.length/charsPerLine);var lineH=fs*1.5;return Math.max(36,lines*lineH+16);}
-function baseDist(d){return d===0?0:d===1?200:d===2?170:d===3?145:130;}
+function baseDist(d){return d===0?0:d===1?240:d===2?200:d===3?170:d===4?150:140;}
 function reqDist(parent,children,s,e,depth){if(!children.length)return baseDist(depth);var totalAngle=(e-s)*Math.PI/180;var perAngle=Math.max(totalAngle/children.length,0.02);var minR=baseDist(depth);for(var i=0;i<children.length;i++){var need=(children[i]._w+30)/perAngle;if(need>minR)minR=need;}var pW=parent._w||100,maxCW=0;for(var j=0;j<children.length;j++){if(children[j]._w>maxCW)maxCW=children[j]._w;}var minEdge=(pW+maxCW)/2+40;if(minEdge>minR)minR=minEdge;return minR;}
-function calcRadialLayout(root){(function as(n,s,e){n.sectorStart=s;n.sectorEnd=e;var cnt=n.children.length;if(!cnt)return;var per=(e-s)/cnt;for(var i=0;i<cnt;i++){var c=n.children[i];c.angle=s+i*per+per/2;as(c,s+i*per,s+i*per+per);}})(root,0,360);(function cp(n,px,py){if(n.depth===0){n.x=0;n.y=0;}else{var p=getNode(n.parentId);if(p){var d=reqDist(p,p.children,p.sectorStart,p.sectorEnd,n.depth);var r=(n.angle-90)*Math.PI/180;n.x=px+Math.cos(r)*d;n.y=py+Math.sin(r)*d;}}if(!n.collapsed)n.children.forEach(function(c){cp(c,n.x,n.y);});})(root,0,0);}
+
+function calcRadialLayout(root){
+  (function as(n,s,e){n.sectorStart=s;n.sectorEnd=e;var cnt=n.children.length;if(!cnt)return;var per=(e-s)/cnt;for(var i=0;i<cnt;i++){var c=n.children[i];c.angle=s+i*per+per/2;as(c,s+i*per,s+i*per+per);}})(root,0,360);
+  (function cp(n,px,py){if(n.depth===0){n.x=0;n.y=0;}else{var p=getNode(n.parentId);if(p){var d=reqDist(p,p.children,p.sectorStart,p.sectorEnd,n.depth);var r=(n.angle-90)*Math.PI/180;n.x=px+Math.cos(r)*d;n.y=py+Math.sin(r)*d;}}if(!n.collapsed)n.children.forEach(function(c){cp(c,n.x,n.y);});})(root,0,0);
+}
+
 function calcTreeLayout(root){
-  var V_GAP=22;
-  var H_GAP=64;
+  var V_GAP = 10;
+  var H_GAP = 44;
   (function measure(n){
-    n._w=estimateWidth(n);
-    n._h=estimateHeight(n);
-    if(n.collapsed||n.children.length===0){n._subH=n._h;return n._subH;}
-    var total=0;
-    n.children.forEach(function(c,i){total+=measure(c);if(i<n.children.length-1)total+=V_GAP;});
-    n._subH=Math.max(n._h,total);
+    n._w = estimateWidth(n);
+    n._h = estimateHeight(n);
+    if(n.collapsed || n.children.length === 0){ n._subH = n._h; return n._subH; }
+    var total = 0;
+    n.children.forEach(function(c,i){ total += measure(c); if(i < n.children.length-1) total += V_GAP; });
+    n._subH = Math.max(n._h, total);
     return n._subH;
   })(root);
-  (function place(n,xLeft,yTop){
-    n.x=xLeft+n._w/2;
-    n.y=yTop+n._subH/2;
-    if(n.collapsed||n.children.length===0)return;
-    var chTotal=0;
-    n.children.forEach(function(c,i){chTotal+=c._subH;if(i<n.children.length-1)chTotal+=V_GAP;});
-    var cy=yTop+(n._subH-chTotal)/2;
+  (function place(n, xLeft, yTop){
+    n.x = xLeft + n._w / 2;
+    n.y = yTop + n._subH / 2;
+    if(n.collapsed || n.children.length === 0) return;
+    var chTotal = 0;
+    n.children.forEach(function(c,i){ chTotal += c._subH; if(i < n.children.length-1) chTotal += V_GAP; });
+    var cy = yTop + (n._subH - chTotal) / 2;
     n.children.forEach(function(c){
-      place(c,xLeft+n._w+H_GAP,cy);
-      cy+=c._subH+V_GAP;
+      place(c, xLeft + n._w + H_GAP, cy);
+      cy += c._subH + V_GAP;
     });
-  })(root,0,0);
-  var offset=root.y;
-  (function shift(n){n.y-=offset;n.children.forEach(shift);})(root);
+  })(root, 0, 0);
+  var offset = root.y;
+  (function shift(n){ n.y -= offset; n.children.forEach(shift); })(root);
 }
-function calcLayout(){var root=getRoot();if(!root)return;(function w(n){n._w=estimateWidth(n);n.children.forEach(w);})(root);if(currentLayout==='tree'){calcTreeLayout(root);}else{calcRadialLayout(root);}}
+
+function calcFanLayout(root){
+  var R_STEP = [0, 230, 180, 150, 130, 115, 105, 100];
+  var HALF_ANGLE = 60;
+  var R_MIN_INNER = 230;
+  (function assign(n, angStart, angEnd, px, py, depth){
+    n._w = estimateWidth(n);
+    n._h = estimateHeight(n);
+    if(n.collapsed || n.children.length === 0) return;
+    var cnt = n.children.length;
+    var span = angEnd - angStart;
+    var pad = Math.min(3, span * 0.10);
+    var usable = Math.max(span - pad * 2, 1);
+    var step = usable / cnt;
+    var r = R_STEP[depth] || 100;
+    n.children.forEach(function(c, i){
+      var cAng = cnt === 1 ? (angStart + angEnd) / 2 : (angStart + pad + step * (i + 0.5));
+      var rad = cAng * Math.PI / 180;
+      c.x = px + r * Math.cos(rad);
+      c.y = py + r * Math.sin(rad);
+      var cStart = cnt === 1 ? angStart : (angStart + pad + step * i);
+      var cEnd   = cnt === 1 ? angEnd   : (angStart + pad + step * (i + 1));
+      assign(c, cStart, cEnd, c.x, c.y, depth + 1);
+    });
+  })(root, -HALF_ANGLE, HALF_ANGLE, 0, 0, 1);
+  root.x = 0; root.y = 0;
+}
+
+function calcBidirectionalLayout(root){
+  var V_GAP = 12;
+  var H_GAP = 50;
+  function prep(n){ n._w = estimateWidth(n); n._h = estimateHeight(n); n.children.forEach(prep); }
+  prep(root);
+  function measure(n){
+    if(n.collapsed || n.children.length === 0){ n._subH = n._h; return n._subH; }
+    var total = 0;
+    n.children.forEach(function(c,i){ total += measure(c); if(i < n.children.length-1) total += V_GAP; });
+    n._subH = Math.max(n._h, total);
+    return n._subH;
+  }
+  root.children.forEach(measure);
+  root.x = 0; root.y = 0;
+  var leftKids = [], rightKids = [];
+  root.children.forEach(function(c, i){ if(i % 2 === 0) rightKids.push(c); else leftKids.push(c); });
+  function placeNode(n, anchorX, yTop, dir){
+    n.x = dir > 0 ? anchorX + n._w/2 : anchorX - n._w/2;
+    n.y = yTop + n._subH / 2;
+    if(n.collapsed || n.children.length === 0) return;
+    var chTotal = 0;
+    n.children.forEach(function(c,i){ chTotal += c._subH; if(i < n.children.length-1) chTotal += V_GAP; });
+    var cy = yTop + (n._subH - chTotal) / 2;
+    var edge = dir > 0 ? n.x + n._w/2 : n.x - n._w/2;
+    n.children.forEach(function(c){
+      placeNode(c, edge + dir * H_GAP, cy, dir);
+      cy += c._subH + V_GAP;
+    });
+  }
+  function layoutSide(kids, dir){
+    if(kids.length === 0) return;
+    var totalH = 0;
+    kids.forEach(function(k, i){ totalH += k._subH; if(i < kids.length-1) totalH += V_GAP; });
+    var cy = -totalH / 2;
+    var rootEdge = dir > 0 ? root._w/2 : -root._w/2;
+    kids.forEach(function(k){
+      placeNode(k, rootEdge + dir * H_GAP, cy, dir);
+      cy += k._subH + V_GAP;
+    });
+  }
+  layoutSide(rightKids, 1);
+  layoutSide(leftKids, -1);
+}
+
+function calcLayout(){
+  var root = getRoot();
+  if(!root) return;
+  (function w(n){ n._w = estimateWidth(n); n.children.forEach(w); })(root);
+  if(currentLayout === 'tree') calcTreeLayout(root);
+  else if(currentLayout === 'fan') calcFanLayout(root);
+  else if(currentLayout === 'bidir') calcBidirectionalLayout(root);
+  else calcRadialLayout(root);
+}
+
 var container=document.getElementById('canvas-container');
 var svgLayer=document.getElementById('svg-layer');
 var nodesLayer=document.getElementById('nodes-layer');
@@ -310,13 +396,8 @@ function showEditModal(){
     if(!selectedId)return;
     var n=getNode(selectedId);if(!n)return;
     var editInput=document.getElementById('edit-text');
-    if(n.text==='新节点'){
-        editInput.value='';
-        editInput.placeholder='新节点';
-    } else {
-        editInput.value=n.text;
-        editInput.placeholder='节点文字';
-    }
+    if(n.text==='新节点'){ editInput.value=''; editInput.placeholder='新节点'; }
+    else { editInput.value=n.text; editInput.placeholder='节点文字'; }
     document.getElementById('edit-link').value=n.link||'';
     document.getElementById('edit-color').value=n.color||'#ffffff';
     document.getElementById('edit-note').value=n.note||'';
@@ -328,10 +409,7 @@ document.getElementById('edit-save').addEventListener('click',function(){
     if(!selectedId)return;
     var n=getNode(selectedId);if(!n)return;
     var t=document.getElementById('edit-text').value.trim();
-    if(!t){
-        modalEdit.classList.remove('show');
-        return;
-    }
+    if(!t){ modalEdit.classList.remove('show'); return; }
     saveHistory();
     n.text=t;
     n.link=document.getElementById('edit-link').value.trim();
@@ -342,7 +420,7 @@ document.getElementById('edit-save').addEventListener('click',function(){
 });function updateToolbar(){
 var inner=document.getElementById('toolbar-inner');var noteBar=document.getElementById('note-toolbar');
 if(currentMode==='create'){
-var has=!!selectedId;var node=selectedId?getNode(selectedId):null;var canCollapse=node&&node.children.length>0;
+var has=!!selectedId;var node=selectedId?getNode(selectedId):null;
 var key='create|'+has+'|'+currentLayout+'|'+(focusNodeId?'f':'n');
 if(key===lastToolbarKey)return;lastToolbarKey=key;
 inner.style.display='flex';noteBar.classList.remove('active');
@@ -453,13 +531,16 @@ document.getElementById('mode-menu').addEventListener('click',function(e){
 var item=e.target.closest('.mode-menu-item');
 if(!item)return;
 if(item.dataset.action==='toggle-layout'){
-currentLayout=currentLayout==='radial'?'tree':'radial';
-lastToolbarKey='';
-buildNodeMap();
-resetView();
-updateToolbar();
-updateModeMenu();
-return;
+  var order = ['radial', 'tree', 'fan', 'bidir'];
+  var idx = order.indexOf(currentLayout);
+  if(idx < 0) idx = 0;
+  currentLayout = order[(idx + 1) % order.length];
+  lastToolbarKey = '';
+  buildNodeMap();
+  resetView();
+  updateToolbar();
+  updateModeMenu();
+  return;
 }
 if(item.dataset.mode){
 currentMode=item.dataset.mode;
@@ -484,7 +565,10 @@ if(it.dataset.mode===currentMode)it.classList.add('active');
 else if(it.dataset.mode)it.classList.remove('active');
 });
 var layoutItem=document.getElementById('layout-menu-item');
-if(layoutItem){layoutItem.textContent='布局：'+(currentLayout==='radial'?'放射':'树状');}
+if(layoutItem){
+  var names={radial:'放射',tree:'紧凑树',fan:'扇形',bidir:'双向'};
+  layoutItem.textContent='布局：'+(names[currentLayout]||'放射');
+}
 }
 var ptr=null,sx,sy,spx,spy,drag=false,moved=false;
 var draggingNodeId=null,dragNodeOX=0,dragNodeOY=0,dragNodeSX=0,dragNodeSY=0;
@@ -570,7 +654,13 @@ return root;
 document.getElementById('export-cancel').addEventListener('click',function(){document.getElementById('modal-export').classList.remove('show');});
 document.getElementById('export-json-btn').addEventListener('click',function(){if(!exportDocId)return;var d=docs.find(function(x){return x.id===exportDocId;});if(!d)return;var json=JSON.stringify({name:d.name,root:serializeNode(d.root)},null,2);var b=new Blob([json],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=d.name+'.json';a.click();document.getElementById('modal-export').classList.remove('show');});
 document.getElementById('export-png-btn').addEventListener('click',function(){if(!exportDocId)return;var d=docs.find(function(x){return x.id===exportDocId;});if(!d)return;exportToPNG(d);document.getElementById('modal-export').classList.remove('show');});
-function calcLayoutFor(root){(function w(n){n._w=estimateWidth(n);n.children.forEach(w);})(root);if(currentLayout==='tree'){calcTreeLayout(root);}else{calcRadialLayout(root);}}
+function calcLayoutFor(root){
+  (function w(n){ n._w=estimateWidth(n); n.children.forEach(w); })(root);
+  if(currentLayout === 'tree') calcTreeLayout(root);
+  else if(currentLayout === 'fan') calcFanLayout(root);
+  else if(currentLayout === 'bidir') calcBidirectionalLayout(root);
+  else calcRadialLayout(root);
+}
 function exportToPNG(doc){
 var isCurrent=(doc.id===currentDocId);var includeNote=isCurrent&&(currentMode==='note');
 var root=doc.root;if(!isCurrent)calcLayoutFor(root);
@@ -651,15 +741,10 @@ function renderRepo(){
         var moreEl=document.createElement('span');
         moreEl.className='doc-more';
         moreEl.textContent='⋮';
-        moreEl.addEventListener('click',function(e){
-            e.stopPropagation();
-            showContextMenu(e,d.id);
-        });
+        moreEl.addEventListener('click',function(e){ e.stopPropagation(); showContextMenu(e,d.id); });
         footer.appendChild(moreEl);
         card.appendChild(footer);
-        card.addEventListener('click',function(e){
-            if(!e.target.closest('.doc-more'))openDoc(d.id);
-        });
+        card.addEventListener('click',function(e){ if(!e.target.closest('.doc-more'))openDoc(d.id); });
         frag.appendChild(card);
     });
     grid.appendChild(frag);
