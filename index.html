@@ -755,4 +755,13 @@ window.addEventListener('resize',function(){if(currentPage!=='edit')return;clear
 })();
 </script>
 </body>
+```html
+<script>
+window.onerror=function(m,u,l,c,e){
+  alert('JS报错 | 行'+l+' | '+m);
+  return false;
+};
+</script>
+```
+
 </html>
