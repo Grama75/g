@@ -163,11 +163,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 <div id="context-menu"></div>
 <div id="note-popup"></div>
 <script>(function(){
-window.onerror=function(msg,url,line){
-  var el=document.getElementById('global-error');
-  if(el){el.style.display='block';el.textContent='JS错误: '+msg+' 行:'+line;}
-  return false;
-};
+
 
 var docs=[];
 var folders=[];
