@@ -130,10 +130,12 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 #note-panel .np-box{background:#fff;width:100%;max-width:520px;max-height:82vh;border-radius:16px 16px 0 0;padding:18px;display:flex;flex-direction:column;overflow-y:auto}
 #note-panel h3{font-size:15px;color:#4a3f35;margin-bottom:10px;flex-shrink:0}
 .np-label{font-size:12px;color:#8b7d6b;margin-bottom:6px;margin-top:12px}
-.np-text{background:#f9f7f3;border:1.5px solid #e0dcd5;border-radius:8px;padding:12px;font-size:15px;line-height:1.6;color:#2c3e50;word-break:break-word;-webkit-user-select:text;user-select:text;min-height:60px;max-height:120px;overflow-y:auto}
+.np-text{background:#f9f7f3;border:1.5px solid #e0dcd5;border-radius:8px;padding:12px;font-size:15px;line-height:1.8;color:#2c3e50;word-break:break-word;-webkit-user-select:none;user-select:none;min-height:60px;max-height:120px;overflow-y:auto}
+.np-char{display:inline;cursor:pointer;-webkit-user-select:none;user-select:none;padding:1px 0;border-radius:2px}
+.np-char:active{background:rgba(91,143,249,0.2)}
 .np-colors{display:flex;gap:8px;margin-top:8px}
 .np-color-btn{flex:1;padding:10px 4px;border:1.5px solid #e0dcd5;border-radius:8px;background:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;color:#4a3f35}
-.np-color-btn:active{background:#f5f0e6}
+.np-color-btn.active{border-color:#5b8ff9;background:#e8f0fe}
 .np-color-btn .swatch{display:inline-block;width:16px;height:3px;border-radius:2px}
 .np-bubble-input{width:100%;border:1.5px solid #e0dcd5;border-radius:8px;padding:10px;font-size:14px;outline:none;min-height:60px;resize:vertical;font-family:inherit;color:#4a3f35}
 .np-icons{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
@@ -202,16 +204,16 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 <div id="note-popup"></div>
 <div id="note-panel"><div class="np-box">
   <h3 id="np-title">节点笔记</h3>
-  <div class="np-label">节点文字（长按选中要划线的部分）</div>
+  <div class="np-label">点字符加划线（再点切换 红→黑→蓝→无）</div>
   <div class="np-text" id="np-text"></div>
-  <div class="np-label">划线颜色</div>
+  <div class="np-label">画笔</div>
   <div class="np-colors">
-    <button class="np-color-btn" onclick="applyMark('red')"><span class="swatch" style="background:#e74c3c"></span>红</button>
-    <button class="np-color-btn" onclick="applyMark('black')"><span class="swatch" style="background:#2c3e50"></span>黑</button>
-    <button class="np-color-btn" onclick="applyMark('blue')"><span class="swatch" style="background:#3498db"></span>蓝</button>
-    <button class="np-color-btn" onclick="applyMark(null)">清除</button>
+    <button class="np-color-btn active" onclick="setBrush('red')" data-color="red"><span class="swatch" style="background:#e74c3c"></span>红</button>
+    <button class="np-color-btn" onclick="setBrush('black')" data-color="black"><span class="swatch" style="background:#2c3e50"></span>黑</button>
+    <button class="np-color-btn" onclick="setBrush('blue')" data-color="blue"><span class="swatch" style="background:#3498db"></span>蓝</button>
+    <button class="np-color-btn" onclick="setBrush('none')" data-color="none">橡皮</button>
   </div>
-  <div class="np-label">气泡内容（保存在节点旁，点击气泡展开）</div>
+  <div class="np-label">气泡内容（点击节点旁 💬 显示）</div>
   <textarea class="np-bubble-input" id="np-bubble" placeholder="写点什么..."></textarea>
   <div class="np-label">标记</div>
   <div class="np-icons">
@@ -232,8 +234,14 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
   if(!canvas)return;
   var ctx=canvas.getContext('2d');
   var W,H,vanishX,vanishY,stars=[],bgStars=[],lastT=0,running=false,started=false;
-  var COUNT=280;
+  var COUNT=140;
   var BG_COUNT=140;
+  var SPEED=0.0013;
+  var VANISH_ZONE=0.01;
+  var VANISH_Y=0.5;
+  var TRAIL=0.7;
+  var WIDTH=0.6;
+  var ALPHA=0.6;
   function pickColor(){
     var r=Math.random();
     if(r<0.7)return '255,255,255';
@@ -247,9 +255,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
       a:Math.random()*Math.PI*2,
       dist:maxR*(0.05+Math.random()*1.0),
       sp:0.5+Math.random()*1.4,
-      len:0.18+Math.random()*0.35,
-      w:0.7+Math.random()*1.4,
-      al:0.6+Math.random()*0.4,
+      len:0.5+Math.random()*0.5,
+      w:0.4+Math.random()*WIDTH,
+      al:0.5+Math.random()*ALPHA,
       c:pickColor()
     };
   }
@@ -270,7 +278,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
     H=canvas.height=window.innerHeight*dpr;
     canvas.style.width=window.innerWidth+'px';
     canvas.style.height=window.innerHeight+'px';
-    vanishX=W/2;vanishY=H*0.46;
+    vanishX=W/2;vanishY=H*VANISH_Y;
   }
   function init(){
     resize();
@@ -307,11 +315,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
     for(var i=0;i<stars.length;i++){
       var s=stars[i];
       var speedFactor=1+(1-s.dist/maxR)*4.5;
-      s.dist-=s.dist*s.sp*dt*0.0032*speedFactor;
+      s.dist-=s.dist*s.sp*dt*SPEED*speedFactor;
       var cosA=Math.cos(s.a),sinA=Math.sin(s.a)*0.86;
       var hx=vanishX+cosA*s.dist;
       var hy=vanishY+sinA*s.dist;
-      var trailLen=s.dist*s.len;
+      var trailLen=s.dist*s.len*TRAIL;
       var tx=vanishX+cosA*(s.dist+trailLen);
       var ty=vanishY+sinA*(s.dist+trailLen);
       var nearFade=Math.min(1,s.dist/(maxR*0.05));
@@ -326,18 +334,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
       ctx.moveTo(tx,ty);
       ctx.lineTo(hx,hy);
       ctx.stroke();
-      var shortLen=Math.min(trailLen*0.4,18*dpr);
-      var stx=vanishX+cosA*(s.dist+shortLen);
-      var sty=vanishY+sinA*(s.dist+shortLen);
-      var grad2=ctx.createLinearGradient(stx,sty,hx,hy);
-      grad2.addColorStop(0,'rgba('+s.c+',0)');
-      grad2.addColorStop(1,'rgba(255,255,255,'+Math.min(1,alpha*1.2)+')');
-      ctx.strokeStyle=grad2;
-      ctx.lineWidth=s.w*dpr*0.7;
-      ctx.beginPath();
-      ctx.moveTo(stx,sty);
-      ctx.lineTo(hx,hy);
-      ctx.stroke();
       if(s.w>1.2){
         var glowR=s.w*4*dpr;
         var g2=ctx.createRadialGradient(hx,hy,0,hx,hy,glowR);
@@ -347,13 +343,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
         ctx.arc(hx,hy,glowR,0,Math.PI*2);
         ctx.fillStyle=g2;ctx.fill();
       }
-      if(s.dist<maxR*0.02){
+      if(s.dist<maxR*VANISH_ZONE){
         s.a=Math.random()*Math.PI*2;
         s.dist=maxR*(0.85+Math.random()*0.35);
         s.sp=0.5+Math.random()*1.4;
-        s.len=0.18+Math.random()*0.35;
-        s.w=0.7+Math.random()*1.4;
-        s.al=0.6+Math.random()*0.4;
+        s.len=0.5+Math.random()*0.5;
+        s.w=0.4+Math.random()*WIDTH;
+        s.al=0.5+Math.random()*ALPHA;
         s.c=pickColor();
       }
     }
@@ -547,25 +543,21 @@ function renderIndentTree(){
     var row=document.createElement('div');
     row.className='irow'+(depth===0?' root-row':'')+(n.id===selectedId?' selected':'');
     row.dataset.nid=n.id;
-
     if(n.icon){
       var ico=document.createElement('span');
       ico.className='iicon';
       ico.textContent={star:'⭐',warn:'⚠️',idea:'💡',q:'❓',check:'✅'}[n.icon]||'';
       row.appendChild(ico);
     }
-
     var dot=document.createElement('span');
     dot.className='dot';
     var hasKid=n.children&&n.children.length>0;
     dot.textContent=hasKid?(n.collapsed?'▶':'▼'):'●';
     row.appendChild(dot);
-
     var txt=document.createElement('span');
     txt.className='itext';
     txt.innerHTML=buildTextHTML(n.text, n.marks);
     row.appendChild(txt);
-
     if(n.bubble){
       var bub=document.createElement('span');
       bub.className='ibubble';
@@ -576,7 +568,6 @@ function renderIndentTree(){
       });
       row.appendChild(bub);
     }
-
     row.addEventListener('click',function(e){
       e.stopPropagation();
       if(currentMode==='note'){
@@ -802,33 +793,106 @@ document.getElementById('edit-save').addEventListener('click',function(){
 var notePanelNodeId = null;
 var notePanelMarks = [];
 var notePanelIcon = '';
+var notePanelBrush = 'red';
+
+function marksToColors(text, marks){
+  var colors = new Array(text.length);
+  for(var k=0; k<text.length; k++) colors[k] = null;
+  marks.forEach(function(m){
+    var s = Math.max(0, m.start);
+    var e = Math.min(text.length, m.end);
+    for(var i=s; i<e; i++) colors[i] = m.color;
+  });
+  return colors;
+}
+
+function colorsToMarks(text, colors){
+  var marks = [];
+  var start = -1;
+  var current = null;
+  for(var i=0; i<=text.length; i++){
+    var c = (i < text.length) ? colors[i] : null;
+    if(c !== current){
+      if(current !== null && start >= 0){
+        marks.push({start:start, end:i, color:current});
+      }
+      start = (c !== null) ? i : -1;
+      current = c;
+    }
+  }
+  return marks;
+}
+
+function renderNoteText(){
+  var n = getNode(notePanelNodeId);
+  if(!n) return;
+  var container = document.getElementById('np-text');
+  var text = n.text;
+  var colors = marksToColors(text, notePanelMarks);
+  var html = '';
+  for(var i=0; i<text.length; i++){
+    var cls = 'np-char';
+    if(colors[i]) cls += ' mark-' + colors[i];
+    html += '<span class="' + cls + '" data-i="' + i + '">' + escapeHTML(text[i]) + '</span>';
+  }
+  container.innerHTML = html;
+}
+
+function onNoteTextClick(e){
+  var el = e.target.closest('.np-char');
+  if(!el) return;
+  var n = getNode(notePanelNodeId);
+  if(!n) return;
+  var i = parseInt(el.dataset.i);
+  var colors = marksToColors(n.text, notePanelMarks);
+  if(notePanelBrush === 'none'){
+    colors[i] = null;
+  } else {
+    if(colors[i] === notePanelBrush) colors[i] = null;
+    else colors[i] = notePanelBrush;
+  }
+  notePanelMarks = colorsToMarks(n.text, colors);
+  renderNoteText();
+}
+
+function setBrush(color){
+  notePanelBrush = color;
+  document.querySelectorAll('.np-color-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.color === color);
+  });
+}
 
 function openNotePanel(nodeId){
-  var n=getNode(nodeId);
-  if(!n)return;
-  notePanelNodeId=nodeId;
-  notePanelMarks=(n.marks||[]).slice();
-  notePanelIcon=n.icon||'';
-  document.getElementById('np-text').innerHTML=buildTextHTML(n.text,notePanelMarks);
-  document.getElementById('np-bubble').value=n.bubble||'';
+  var n = getNode(nodeId);
+  if(!n) return;
+  notePanelNodeId = nodeId;
+  notePanelMarks = (n.marks || []).slice();
+  notePanelIcon = n.icon || '';
+  notePanelBrush = 'red';
+  renderNoteText();
+  document.getElementById('np-bubble').value = n.bubble || '';
   updateIconButtons();
+  document.querySelectorAll('.np-color-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.color === 'red');
+  });
   document.getElementById('note-panel').classList.add('show');
+  var container = document.getElementById('np-text');
+  container.onclick = onNoteTextClick;
 }
 
 function closeNotePanel(){
   document.getElementById('note-panel').classList.remove('show');
-  notePanelNodeId=null;
-  if(window.getSelection)window.getSelection().removeAllRanges();
+  notePanelNodeId = null;
 }
 
 function saveNotePanel(){
-  if(!notePanelNodeId)return closeNotePanel();
-  var n=getNode(notePanelNodeId);
-  if(!n)return closeNotePanel();
+  if(!notePanelNodeId) return closeNotePanel();
+  var n = getNode(notePanelNodeId);
+  if(!n) return closeNotePanel();
   saveHistory();
-  n.marks=notePanelMarks.slice();
-  n.bubble=document.getElementById('np-bubble').value.trim();
-  n.icon=notePanelIcon;
+  n.marks = notePanelMarks.slice();
+  n.bubble = document.getElementById('np-bubble').value.trim();
+  n.icon = notePanelIcon;
   closeNotePanel();
   render();
   saveAll();
@@ -843,50 +907,6 @@ function updateIconButtons(){
 function pickIcon(icon){
   notePanelIcon=icon;
   updateIconButtons();
-}
-
-function getSelectionOffsets(container){
-  var sel=window.getSelection();
-  if(!sel.rangeCount)return null;
-  var range=sel.getRangeAt(0);
-  if(!container.contains(range.startContainer)||!container.contains(range.endContainer))return null;
-  function offsetInContainer(node,offset){
-    var walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT,null);
-    var count=0;
-    while(walker.nextNode()){
-      if(walker.currentNode===node){return count+offset;}
-      count+=walker.currentNode.textContent.length;
-    }
-    return -1;
-  }
-  var start=offsetInContainer(range.startContainer,range.startOffset);
-  var end=offsetInContainer(range.endContainer,range.endOffset);
-  if(start<0||end<0||start>=end)return null;
-  return {start:start,end:end};
-}
-
-function applyMark(color){
-  var container=document.getElementById('np-text');
-  var n=getNode(notePanelNodeId);
-  if(!n)return;
-  var sel=getSelectionOffsets(container);
-  if(!sel){
-    if(color===null){notePanelMarks=[];}
-    else{notePanelMarks=[{start:0,end:n.text.length,color:color}];}
-  } else {
-    if(color===null){
-      notePanelMarks=notePanelMarks.filter(function(m){
-        return m.end <= sel.start || m.start >= sel.end;
-      });
-    } else {
-      notePanelMarks=notePanelMarks.filter(function(m){
-        return m.end <= sel.start || m.start >= sel.end;
-      });
-      notePanelMarks.push({start:sel.start,end:sel.end,color:color});
-    }
-  }
-  container.innerHTML=buildTextHTML(n.text,notePanelMarks);
-  if(window.getSelection)window.getSelection().removeAllRanges();
 }
 
 document.getElementById('mode-main-btn').addEventListener('click',function(e){
@@ -1161,6 +1181,12 @@ function renderQuoteList(){
 document.getElementById('add-quote-btn').addEventListener('click',function(){var t=prompt('名言内容');if(!t)return;var a=prompt('作者');if(!a)return;quotes.push({text:t,author:a});saveAll();renderQuoteList();});
 
 function initQuotes(){if(quotes.length)return;quotes=[{text:'人类仰望星空，第一次产生了求知的渴望。',author:'卡尔·萨根'},{text:'我们都在阴沟里，但仍有人仰望星空。',author:'王尔德'},{text:'有两样东西，越是思考，越觉震撼：头顶的星空，心中的道德。',author:'康德'},{text:'宇宙不仅比我们想象的更奇特，而且比我们能够想象的更奇特。',author:'霍尔丹'},{text:'我们都是星尘做的。',author:'卡尔·萨根'},{text:'学而不思则罔，思而不学则殆。',author:'孔子'},{text:'博观而约取，厚积而薄发。',author:'苏轼'},{text:'路漫漫其修远兮，吾将上下而求索。',author:'屈原'},{text:'上善若水，水善利万物而不争。',author:'老子'},{text:'我思故我在。',author:'笛卡尔'}];}
+
+window.openNotePanel=openNotePanel;
+window.closeNotePanel=closeNotePanel;
+window.saveNotePanel=saveNotePanel;
+window.setBrush=setBrush;
+window.pickIcon=pickIcon;
 
 function init(){
   loadAll();
