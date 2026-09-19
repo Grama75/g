@@ -239,10 +239,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
   var W,H,vanishX,vanishY,stars=[],bgStars=[],lastT=0,running=false,started=false;
   var COUNT=140;
   var BG_COUNT=140;
-  var SPEED=0.0013;
-  var VANISH_ZONE=0.01;
+  var SPEED=0.0032;
+  var VANISH_ZONE=0.16;
   var VANISH_Y=0.5;
-  var TRAIL=0.7;
+  var TRAIL=0.38;
   var WIDTH=0.6;
   var ALPHA=0.6;
   function pickColor(){
@@ -1204,7 +1204,9 @@ function init(){
   showRandomQuote();
 }
 init();
-})();if('serviceWorker' in navigator){
+})();
+
+if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(function(){});
 }
 </script>
