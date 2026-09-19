@@ -9,14 +9,18 @@
 html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;position:fixed;touch-action:none;background:#f5f0e6}
 .page{position:absolute;inset:0;display:none;flex-direction:column}
 .page.active{display:flex}
-#home-page{justify-content:center;align-items:center;background:#f5f0e6}
-#quote-container{text-align:center;padding:0 30px;max-width:600px;width:100%}
-#quote-text{font-family:Georgia,'Times New Roman','宋体',serif;font-size:22px;color:#4a3f35;line-height:1.6;margin-bottom:5px}
-#quote-author{font-size:15px;color:#8b7d6b;text-align:right;font-style:italic}
-#create-btn{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);width:90px;height:90px;border-radius:50%;background:#a0522d;color:#fff;font-size:16px;font-weight:600;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.15);cursor:pointer;letter-spacing:1px;z-index:5}
-#bottom-nav{position:fixed;bottom:0;left:0;right:0;height:60px;background:#fff;border-top:1px solid #e0dcd5;display:flex;z-index:100}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;cursor:pointer;color:#8b7d6b}
+#home-page{justify-content:center;align-items:center;background:#050810;position:relative;overflow:hidden}
+#starfield{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0}
+#quote-container{position:relative;z-index:2;text-align:center;padding:0 30px;max-width:600px;width:100%}
+#quote-text{font-family:Georgia,'Times New Roman','宋体',serif;font-size:22px;color:#e8eef8;line-height:1.6;margin-bottom:6px;text-shadow:0 0 24px rgba(140,180,255,.35),0 2px 10px rgba(0,0,0,.7);transition:opacity .6s}
+#quote-author{font-size:15px;color:#8fa3c4;text-align:right;font-style:italic;text-shadow:0 1px 4px rgba(0,0,0,.6);transition:opacity .6s}
+#create-btn{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1.5px solid rgba(160,200,255,0.35);color:#e8eef8;font-size:15px;font-weight:600;box-shadow:0 4px 32px rgba(100,150,255,0.25),inset 0 0 20px rgba(160,200,255,0.08);cursor:pointer;letter-spacing:2px;z-index:2}
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;height:60px;background:rgba(255,255,255,0.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid #e0dcd5;display:flex;z-index:100;transition:background .4s ease,border-color .4s ease}
+#bottom-nav.dark{background:rgba(8,12,24,0.65);border-top:1px solid rgba(120,160,230,0.18)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;cursor:pointer;color:#8b7d6b;transition:color .3s ease,text-shadow .3s ease}
+#bottom-nav.dark .nav-item{color:#6f7f9a}
 .nav-item.active{color:#a0522d}
+#bottom-nav.dark .nav-item.active{color:#8fb8ff;text-shadow:0 0 12px rgba(143,184,255,0.7),0 0 4px rgba(143,184,255,0.9)}
 .nav-item .nav-label{font-size:10px;margin-top:2px}
 #repo-page{background:#f5f0e6}
 .page-topbar{height:56px;background:#fff;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid #e0dcd5;gap:8px}
@@ -105,12 +109,14 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .search-menu-item:last-child{border-bottom:none}
 .search-menu-item:active{background:#f5f0e6}
 #note-popup{position:fixed;z-index:250;background:#fff;border-radius:10px;padding:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);max-width:260px;display:none;font-size:13px;color:#4a3f35;word-break:break-word}
-#global-error{position:fixed;left:0;right:0;bottom:0;background:#e74c3c;color:#fff;padding:8px 12px;font-size:12px;z-index:9999;word-break:break-all;display:none;font-family:monospace}
 </style>
 </head>
 <body>
-<div id="global-error"></div>
-<div id="home-page" class="page active"><div id="quote-container"><div id="quote-text"></div><div id="quote-author"></div></div><button id="create-btn">Create</button></div>
+<div id="home-page" class="page active">
+<canvas id="starfield"></canvas>
+<div id="quote-container"><div id="quote-text"></div><div id="quote-author"></div></div>
+<button id="create-btn">Create</button>
+</div>
 <div id="repo-page" class="page">
 <div class="page-topbar" style="position:relative;">
 <input class="search-input" id="repo-search" placeholder="搜索...">
@@ -162,9 +168,133 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 <div id="modal-export" class="modal-overlay"><div class="modal-box" style="max-width:320px;"><h3>导出为</h3><button class="modal-btn" id="export-json-btn" style="width:100%;margin-bottom:8px;justify-content:center;">JSON（可再次导入）</button><button class="modal-btn primary" id="export-png-btn" style="width:100%;margin-bottom:8px;justify-content:center;">PNG 图片</button><button class="modal-btn" id="export-md-btn" style="width:100%;margin-bottom:8px;justify-content:center;">Markdown 大纲</button><div class="modal-actions"><button class="modal-btn primary" id="export-cancel">取消</button></div></div></div>
 <div id="context-menu"></div>
 <div id="note-popup"></div>
-<script>(function(){
+<script>(function starfield(){
+  var canvas=document.getElementById('starfield');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var W,H,vanishX,vanishY,stars=[],lastT=0,running=false;
+  var COUNT=320;
+  function pickColor(){
+    var r=Math.random();
+    if(r<0.7)return '255,255,255';
+    if(r<0.85)return '190,215,255';
+    if(r<0.95)return '255,240,200';
+    return '210,190,255';
+  }
+  function makeStar(){
+    var maxR=Math.max(W,H)*1.1;
+    return{
+      a:Math.random()*Math.PI*2,
+      dist:maxR*(0.15+Math.random()*0.95),
+      sp:0.35+Math.random()*1.1,
+      len:0.08+Math.random()*0.22,
+      w:0.35+Math.random()*1.1,
+      al:0.35+Math.random()*0.6,
+      c:pickColor()
+    };
+  }
+  function resize(){
+    var dpr=window.devicePixelRatio||1;
+    W=canvas.width=window.innerWidth*dpr;
+    H=canvas.height=window.innerHeight*dpr;
+    canvas.style.width=window.innerWidth+'px';
+    canvas.style.height=window.innerHeight+'px';
+    vanishX=W/2;vanishY=H*0.46;
+  }
+  function init(){
+    resize();
+    stars=[];
+    for(var i=0;i<COUNT;i++)stars.push(makeStar());
+  }
+  function draw(t){
+    if(!running)return;
+    var dt=lastT?(t-lastT):16;
+    if(dt>60)dt=16;
+    lastT=t;
+    ctx.fillStyle='rgba(5,8,16,0.45)';
+    ctx.fillRect(0,0,W,H);
+    var g=ctx.createRadialGradient(vanishX,vanishY,0,vanishX,vanishY,Math.max(W,H)*0.6);
+    g.addColorStop(0,'rgba(90,120,200,0.16)');
+    g.addColorStop(0.25,'rgba(40,60,120,0.06)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    var maxR=Math.max(W,H)*1.1;
+    var dpr=window.devicePixelRatio||1;
+    ctx.lineCap='round';
+    for(var i=0;i<stars.length;i++){
+      var s=stars[i];
+      var speedFactor=1+(1-s.dist/maxR)*4.5;
+      s.dist-=s.dist*s.sp*dt*0.0028*speedFactor;
+      var cosA=Math.cos(s.a),sinA=Math.sin(s.a)*0.86;
+      var hx=vanishX+cosA*s.dist;
+      var hy=vanishY+sinA*s.dist;
+      var trailLen=s.dist*s.len;
+      var tx=vanishX+cosA*(s.dist+trailLen);
+      var ty=vanishY+sinA*(s.dist+trailLen);
+      var nearFade=Math.min(1,s.dist/(maxR*0.08));
+      var alpha=s.al*nearFade;
+      var grad=ctx.createLinearGradient(tx,ty,hx,hy);
+      grad.addColorStop(0,'rgba('+s.c+',0)');
+      grad.addColorStop(0.75,'rgba('+s.c+','+(alpha*0.55)+')');
+      grad.addColorStop(1,'rgba('+s.c+','+alpha+')');
+      ctx.strokeStyle=grad;
+      ctx.lineWidth=s.w*dpr;
+      ctx.beginPath();
+      ctx.moveTo(tx,ty);
+      ctx.lineTo(hx,hy);
+      ctx.stroke();
+      var shortLen=Math.min(trailLen*0.35,14*dpr);
+      var stx=vanishX+cosA*(s.dist+shortLen);
+      var sty=vanishY+sinA*(s.dist+shortLen);
+      var grad2=ctx.createLinearGradient(stx,sty,hx,hy);
+      grad2.addColorStop(0,'rgba('+s.c+',0)');
+      grad2.addColorStop(1,'rgba(255,255,255,'+(alpha*0.9)+')');
+      ctx.strokeStyle=grad2;
+      ctx.lineWidth=s.w*dpr*0.6;
+      ctx.beginPath();
+      ctx.moveTo(stx,sty);
+      ctx.lineTo(hx,hy);
+      ctx.stroke();
+      if(s.w>1.1){
+        var glowR=s.w*3.2*dpr;
+        var g2=ctx.createRadialGradient(hx,hy,0,hx,hy,glowR);
+        g2.addColorStop(0,'rgba('+s.c+','+(alpha*0.28)+')');
+        g2.addColorStop(1,'rgba('+s.c+',0)');
+        ctx.beginPath();
+        ctx.arc(hx,hy,glowR,0,Math.PI*2);
+        ctx.fillStyle=g2;ctx.fill();
+      }
+      if(s.dist<maxR*0.02){
+        s.a=Math.random()*Math.PI*2;
+        s.dist=maxR*(0.9+Math.random()*0.3);
+        s.sp=0.35+Math.random()*1.1;
+        s.len=0.08+Math.random()*0.22;
+        s.w=0.35+Math.random()*1.1;
+        s.al=0.35+Math.random()*0.6;
+        s.c=pickColor();
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  function start(){
+    if(running)return;
+    running=true;lastT=0;
+    resize();
+    if(!W)setTimeout(start,60);
+    if(W){ctx.fillStyle='#050810';ctx.fillRect(0,0,W,H);requestAnimationFrame(draw);}
+  }
+  function stop(){running=false;}
+  window.addEventListener('resize',function(){if(running)resize();});
+  var hp=document.getElementById('home-page');
+  if(hp){
+    new MutationObserver(function(){
+      if(hp.classList.contains('active'))start();else stop();
+    }).observe(hp,{attributes:true,attributeFilter:['class']});
+    if(hp.classList.contains('active'))setTimeout(start,50);
+  }
+})();
 
-
+(function(){
 var docs=[];
 var folders=[];
 var quotes=[];
@@ -327,17 +457,11 @@ function updateToolbarVisibility(){
     nb.classList.remove('active');
   } else {
     nb.classList.remove('active');
-    if(selectedId){
-      tb.classList.add('show');
-      showTb=true;
-    } else {
-      tb.classList.remove('show');
-    }
+    if(selectedId){tb.classList.add('show');showTb=true;}
+    else{tb.classList.remove('show');}
   }
   if(nl)nl.style.paddingBottom=showTb?'180px':'40px';
-  if(bc&&bc.classList.contains('show')){
-    bc.style.bottom=showTb?'120px':'16px';
-  }
+  if(bc&&bc.classList.contains('show')){bc.style.bottom=showTb?'120px':'16px';}
 }
 
 function render(){
@@ -345,27 +469,22 @@ function render(){
   renderScheduled=true;
   requestAnimationFrame(function(){
     renderScheduled=false;
-    try{
-      if(currentLayout==='bracket'){
-        var cc=document.getElementById('canvas-container');
-        if(cc)cc.style.display='none';
-        var bv=document.getElementById('bracket-view');
-        if(bv)bv.classList.add('show');
-        var bt=document.getElementById('bracketText');
-        if(bt)bt.textContent=renderBracketText(getRoot());
-      } else {
-        var cc2=document.getElementById('canvas-container');
-        if(cc2)cc2.style.display='';
-        var bv2=document.getElementById('bracket-view');
-        if(bv2)bv2.classList.remove('show');
-        renderIndentTree();
-      }
-      renderBreadcrumb();
-      updateToolbarVisibility();
-    }catch(err){
-      var el=document.getElementById('global-error');
-      if(el){el.style.display='block';el.textContent='render错误: '+err.message;}
+    if(currentLayout==='bracket'){
+      var cc=document.getElementById('canvas-container');
+      if(cc)cc.style.display='none';
+      var bv=document.getElementById('bracket-view');
+      if(bv)bv.classList.add('show');
+      var bt=document.getElementById('bracketText');
+      if(bt)bt.textContent=renderBracketText(getRoot());
+    } else {
+      var cc2=document.getElementById('canvas-container');
+      if(cc2)cc2.style.display='';
+      var bv2=document.getElementById('bracket-view');
+      if(bv2)bv2.classList.remove('show');
+      renderIndentTree();
     }
+    renderBreadcrumb();
+    updateToolbarVisibility();
   });
 }
 
@@ -534,11 +653,12 @@ function goPage(name){
   document.getElementById(pages[name]).classList.add('active');
   currentPage=name;
   document.getElementById('bottom-nav').style.display=(name==='edit')?'none':'flex';
+  document.getElementById('bottom-nav').classList.toggle('dark', name==='home');
   if(name==='repo')renderRepo();
   if(name==='home')showRandomQuote();
   if(name==='folder')renderFolders();
   if(name==='quote')renderQuoteList();
-  if(name==='edit'){ render(); updateToolbar(); }
+  if(name==='edit'){render();updateToolbar();}
 }
 document.getElementById('nav-home').addEventListener('click',function(){goPage('home');});
 document.getElementById('nav-home').addEventListener('dblclick',function(){goPage('quote');});
@@ -755,24 +875,19 @@ function renderQuoteList(){
 }
 document.getElementById('add-quote-btn').addEventListener('click',function(){var t=prompt('名言内容');if(!t)return;var a=prompt('作者');if(!a)return;quotes.push({text:t,author:a});saveAll();renderQuoteList();});
 
-function initQuotes(){if(quotes.length)return;quotes=[{text:'生如夏花之绚烂，死如秋叶之静美。',author:'泰戈尔'},{text:'天空没有翅膀的痕迹，但我已飞过。',author:'泰戈尔'},{text:'世界以痛吻我，我要报之以歌。',author:'泰戈尔'},{text:'凡是过往，皆为序章。',author:'莎士比亚'},{text:'黑夜无论怎样悠长，白昼总会到来。',author:'莎士比亚'},{text:'路漫漫其修远兮，吾将上下而求索。',author:'屈原'},{text:'认识你自己。',author:'苏格拉底'},{text:'未经审视的人生不值得过。',author:'苏格拉底'},{text:'上善若水，水善利万物而不争。',author:'老子'},{text:'学而不思则罔，思而不学则殆。',author:'孔子'},{text:'博观而约取，厚积而薄发。',author:'苏轼'},{text:'读书破万卷，下笔如有神。',author:'杜甫'},{text:'温故而知新，可以为师矣。',author:'孔子'},{text:'知识就是力量。',author:'培根'},{text:'我思故我在。',author:'笛卡尔'},{text:'人生而自由，却无往不在枷锁之中。',author:'卢梭'},{text:'人不能两次踏进同一条河流。',author:'赫拉克利特'},{text:'向死而生。',author:'海德格尔'},{text:'他人即地狱。',author:'萨特'},{text:'如果冬天来了，春天还会远吗？',author:'雪莱'},{text:'吾生也有涯，而知也无涯。',author:'庄子'},{text:'知之者不如好之者，好之者不如乐之者。',author:'孔子'},{text:'学习永远不晚。',author:'高尔基'},{text:'读书是在别人思想的帮助下，建立起自己的思想。',author:'鲁巴金'}];}
+function initQuotes(){if(quotes.length)return;quotes=[{text:'人类仰望星空，第一次产生了求知的渴望。',author:'卡尔·萨根'},{text:'我们都在阴沟里，但仍有人仰望星空。',author:'王尔德'},{text:'有两样东西，越是思考，越觉震撼：头顶的星空，心中的道德。',author:'康德'},{text:'宇宙不仅比我们想象的更奇特，而且比我们能够想象的更奇特。',author:'霍尔丹'},{text:'我们都是星尘做的。',author:'卡尔·萨根'},{text:'学而不思则罔，思而不学则殆。',author:'孔子'},{text:'博观而约取，厚积而薄发。',author:'苏轼'},{text:'路漫漫其修远兮，吾将上下而求索。',author:'屈原'},{text:'上善若水，水善利万物而不争。',author:'老子'},{text:'我思故我在。',author:'笛卡尔'}];}
 
 function init(){
-  try{
-    loadAll();
-    initQuotes();
-    if(!docs.length){
-      var d={id:'d'+Date.now(),name:'我的第一张导图',root:createNode('中心主题'),folderId:null,updatedAt:Date.now()};
-      docs.push(d);saveAll();
-    }
-    if(!currentDocId||!docs.find(function(d){return d.id===currentDocId;}))currentDocId=docs[0].id;
-    if(typeof updateModeMenu==='function')updateModeMenu();
-    goPage('home');
-    showRandomQuote();
-  }catch(e){
-    var el=document.getElementById('global-error');
-    if(el){el.style.display='block';el.textContent='init错误: '+e.message;}
+  loadAll();
+  initQuotes();
+  if(!docs.length){
+    var d={id:'d'+Date.now(),name:'我的第一张导图',root:createNode('中心主题'),folderId:null,updatedAt:Date.now()};
+    docs.push(d);saveAll();
   }
+  if(!currentDocId||!docs.find(function(d){return d.id===currentDocId;}))currentDocId=docs[0].id;
+  if(typeof updateModeMenu==='function')updateModeMenu();
+  goPage('home');
+  showRandomQuote();
 }
 init();
 })();
