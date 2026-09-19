@@ -110,7 +110,64 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .search-menu-item:active{background:#f5f0e6}
 #note-popup{position:fixed;z-index:250;background:#fff;border-radius:10px;padding:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);max-width:260px;display:none;font-size:13px;color:#4a3f35;word-break:break-word}
 </style>
-</head>(function starfield(){
+</head><body>
+<div id="home-page" class="page active">
+<canvas id="starfield"></canvas>
+<div id="quote-container"><div id="quote-text"></div><div id="quote-author"></div></div>
+<button id="create-btn">Create</button>
+</div>
+<div id="repo-page" class="page">
+<div class="page-topbar" style="position:relative;">
+<input class="search-input" id="repo-search" placeholder="搜索...">
+<button class="search-toggle" id="search-toggle">名称 ▾</button>
+<div id="search-menu" style="display:none;position:absolute;top:56px;right:12px;background:#fff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:140px;z-index:300;overflow:hidden;">
+<div class="search-menu-item" data-mode="name">名称</div>
+<div class="search-menu-item" data-mode="content">内容</div>
+<div class="search-menu-item" data-mode="import">导入</div>
+</div>
+</div>
+<div id="repo-grid"></div>
+</div>
+<div id="folder-page" class="page">
+<div class="page-topbar"><span style="font-size:16px;font-weight:600;color:#4a3f35;flex:1;">文件夹</span><button class="modal-btn primary" id="new-folder-btn" style="font-size:12px;padding:6px 12px;">新建文件夹</button></div>
+<div id="folder-list"></div>
+</div>
+<div id="quote-edit-page" class="page">
+<div class="page-topbar"><span style="font-size:16px;font-weight:600;color:#4a3f35;flex:1;">名言管理</span><button class="modal-btn primary" id="add-quote-btn" style="font-size:12px;padding:6px 12px;">添加</button></div>
+<div id="quote-list"></div>
+</div>
+<div id="edit-page" class="page">
+<div id="edit-topbar">
+<button id="back-btn">←</button>
+<span id="edit-doc-name"></span>
+<div id="mode-switcher" style="position:relative;">
+<button id="mode-main-btn" style="padding:5px 10px;border-radius:14px;border:1.5px solid #d0d5dd;background:#fff;font-size:12px;font-weight:600;color:#8b6b4a;cursor:pointer;">编辑 ▾</button>
+<div id="mode-menu" style="display:none;position:absolute;top:38px;left:0;background:#fff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:140px;z-index:300;overflow:hidden;">
+<div class="mode-menu-item" data-mode="create">编辑</div>
+<div class="mode-menu-item" data-mode="note">笔记</div>
+<div class="mode-menu-item" data-mode="review">复习</div>
+<div class="mode-menu-item" data-action="toggle-layout" id="layout-menu-item" style="border-top:1px solid #e0dcd5;">布局：缩进</div>
+</div>
+</div>
+</div>
+<div id="save-status"></div>
+<div id="canvas-container"><svg id="svg-layer"></svg><div id="nodes-layer"></div></div>
+<div id="bracket-view"><pre id="bracketText"></pre></div>
+<div id="breadcrumb"></div>
+<div id="toolbar-container"><div id="toolbar-inner"></div></div>
+<div id="note-toolbar"></div>
+</div>
+<div id="bottom-nav">
+<div class="nav-item active" id="nav-home"><span>📖</span><span class="nav-label">主页</span></div>
+<div class="nav-item" id="nav-repo"><span>🏛</span><span class="nav-label">仓库</span></div>
+</div>
+<div id="modal-edit" class="modal-overlay"><div class="modal-box"><h3>编辑节点</h3><input type="text" id="edit-text" placeholder="节点文字"><input type="text" id="edit-link" placeholder="链接（可选）"><label style="font-size:12px;color:#8b7d6b;">备注</label><textarea id="edit-note" placeholder="备注（可选）"></textarea><div class="modal-actions"><button class="modal-btn" id="edit-cancel">取消</button><button class="modal-btn primary" id="edit-save">保存</button></div></div></div>
+<div id="modal-note" class="modal-overlay"><div class="modal-box"><h3>笔记管理</h3><div id="note-manage-list" style="max-height:300px;overflow-y:auto;margin-bottom:10px;"></div><div style="display:flex;gap:8px;margin-bottom:10px;"><input type="text" id="new-note-name" placeholder="新笔记名称" style="flex:1;margin:0;"><button class="modal-btn primary" id="note-create-btn" style="margin:0;white-space:nowrap;">新建</button></div><div class="modal-actions"><button class="modal-btn primary" id="note-modal-close">关闭</button></div></div></div>
+<div id="modal-import" class="modal-overlay"><div class="modal-box"><h3>📥 导入纯文本</h3><p style="font-size:12px;color:#8b7d6b;margin-bottom:8px;">支持缩进、Markdown、编号等，第一行作为根节点</p><textarea id="import-textarea" placeholder="示例：&#10;学习方法&#10;  记忆原理&#10;    间隔重复" style="min-height:200px;font-family:monospace;"></textarea><div class="modal-actions"><button class="modal-btn" id="import-cancel">取消</button><button class="modal-btn primary" id="import-confirm">生成导图</button></div></div></div>
+<div id="modal-export" class="modal-overlay"><div class="modal-box" style="max-width:320px;"><h3>导出为</h3><button class="modal-btn" id="export-json-btn" style="width:100%;margin-bottom:8px;justify-content:center;">JSON（可再次导入）</button><button class="modal-btn primary" id="export-png-btn" style="width:100%;margin-bottom:8px;justify-content:center;">PNG 图片</button><button class="modal-btn" id="export-md-btn" style="width:100%;margin-bottom:8px;justify-content:center;">Markdown 大纲</button><div class="modal-actions"><button class="modal-btn primary" id="export-cancel">取消</button></div></div></div>
+<div id="context-menu"></div>
+<div id="note-popup"></div>
+<script>(function starfield(){
   var canvas=document.getElementById('starfield');
   if(!canvas)return;
   var ctx=canvas.getContext('2d');
@@ -434,7 +491,9 @@ function selectNode(id){
   selectedId=id;
   render();
   updateToolbar();
-}function updateToolbar(){
+}
+
+function updateToolbar(){
   var inner=document.getElementById('toolbar-inner');
   var noteBar=document.getElementById('note-toolbar');
   if(!inner)return;
