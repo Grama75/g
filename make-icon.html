@@ -8,71 +8,108 @@
 body{font-family:-apple-system,sans-serif;background:#0f1116;color:#e8eef8;padding:20px;text-align:center;margin:0}
 h2{font-size:16px;margin-bottom:16px}
 .preview{width:120px;height:120px;margin:0 auto 20px;border-radius:24px;overflow:hidden;box-shadow:0 4px 20px rgba(100,150,255,.3)}
-.preview svg{width:100%;height:100%;display:block}
+.preview canvas{width:100%;height:100%;display:block}
 button{display:block;width:100%;max-width:300px;margin:10px auto;padding:14px;background:#5b8ff9;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}
 button:active{background:#3b6fe0}
-.hint{font-size:12px;color:#8fa3c4;margin-top:20px;line-height:1.6}
+.status{font-size:12px;color:#8fa3c4;margin-top:10px;min-height:20px}
 </style>
 </head>
 <body>
 
 <h2>生成 App 图标</h2>
 
-<div class="preview">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" id="srcSvg">
-<defs>
-<radialGradient id="g" cx="50%" cy="45%" r="60%">
-<stop offset="0%" stop-color="#2a3a6a"/>
-<stop offset="100%" stop-color="#050810"/>
-</radialGradient>
-</defs>
-<rect width="192" height="192" rx="42" fill="url(#g)"/>
-<circle cx="96" cy="86" r="3" fill="#ffffff"/>
-<circle cx="60" cy="60" r="2" fill="#bcd4ff" opacity="0.8"/>
-<circle cx="130" cy="52" r="2.5" fill="#fff0c8" opacity="0.9"/>
-<circle cx="48" cy="110" r="2" fill="#d2beff" opacity="0.85"/>
-<circle cx="140" cy="120" r="2" fill="#ffffff" opacity="0.7"/>
-<circle cx="80" cy="140" r="2.5" fill="#bcd4ff" opacity="0.85"/>
-<line x1="96" y1="86" x2="48" y2="110" stroke="#5b8ff9" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
-<line x1="96" y1="86" x2="130" y2="52" stroke="#5b8ff9" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
-<line x1="96" y1="86" x2="140" y2="120" stroke="#5b8ff9" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
-<line x1="96" y1="86" x2="80" y2="140" stroke="#5b8ff9" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
-</svg>
-</div>
+<div class="preview"><canvas id="preview" width="120" height="120"></canvas></div>
 
 <button onclick="download(192)">下载 192×192 PNG</button>
 <button onclick="download(512)">下载 512×512 PNG</button>
 
-<div class="hint">
-点按钮 → 浏览器会下载 PNG 到你的手机<br>
-下载后重命名为 <b>icon-192.png</b> 和 <b>icon-512.png</b><br>
-再上传到仓库
-</div>
+<div class="status" id="status"></div>
 
 <script>
-function download(size){
-  var svg = document.getElementById('srcSvg');
-  var xml = new XMLSerializer().serializeToString(svg);
-  var svg64 = btoa(unescape(encodeURIComponent(xml)));
-  var dataUrl = 'data:image/svg+xml;base64,' + svg64;
-  var img = new Image();
-  img.onload = function(){
-    var canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, size, size);
-    canvas.toBlob(function(blob){
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'icon-' + size + '.png';
-      a.click();
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-    }, 'image/png');
-  };
-  img.src = dataUrl;
+function drawIcon(size){
+  var canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  var ctx = canvas.getContext('2d');
+  var s = size / 192;
+
+  var r = 42 * s;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+
+  var grad = ctx.createRadialGradient(size*0.5, size*0.45, 0, size*0.5, size*0.45, size*0.75);
+  grad.addColorStop(0, '#2a3a6a');
+  grad.addColorStop(1, '#050810');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  var lines = [
+    [[96,86],[48,110]],
+    [[96,86],[130,52]],
+    [[96,86],[140,120]],
+    [[96,86],[80,140]]
+  ];
+  ctx.strokeStyle = 'rgba(91,143,249,0.55)';
+  ctx.lineWidth = 2.2 * s;
+  ctx.lineCap = 'round';
+  lines.forEach(function(l){
+    ctx.beginPath();
+    ctx.moveTo(l[0][0]*s, l[0][1]*s);
+    ctx.lineTo(l[1][0]*s, l[1][1]*s);
+    ctx.stroke();
+  });
+
+  var stars = [
+    [96,86, 3.2, '#ffffff', 1],
+    [60,60, 2.2, '#bcd4ff', 0.85],
+    [130,52, 2.6, '#fff0c8', 0.9],
+    [48,110, 2.2, '#d2beff', 0.85],
+    [140,120, 2, '#ffffff', 0.75],
+    [80,140, 2.4, '#bcd4ff', 0.85],
+    [118,105, 1.6, '#ffffff', 0.7],
+    [70,90, 1.6, '#fff0c8', 0.75]
+  ];
+  stars.forEach(function(st){
+    ctx.beginPath();
+    ctx.arc(st[0]*s, st[1]*s, st[2]*s, 0, Math.PI*2);
+    ctx.globalAlpha = st[4];
+    ctx.fillStyle = st[3];
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  return canvas;
 }
+
+function download(size){
+  var status = document.getElementById('status');
+  status.textContent = '正在生成 ' + size + '...';
+  var canvas = drawIcon(size);
+  canvas.toBlob(function(blob){
+    if(!blob){ status.textContent = '生成失败，请重试'; return; }
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'icon-' + size + '.png';
+    a.click();
+    status.textContent = '已生成 ' + size + '×' + size + '（' + Math.round(blob.size/1024) + ' KB）';
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }, 'image/png');
+}
+
+var p = document.getElementById('preview');
+var pc = p.getContext('2d');
+var src = drawIcon(120);
+pc.drawImage(src, 0, 0);
 </script>
 </body>
 </html>
