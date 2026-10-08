@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>思维导图</title>
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#020510">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;position:fixed;touch-action:none;background:#f5f0e6}
@@ -67,37 +64,26 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 #canvas-container{flex:1;position:relative;overflow:hidden;background:#fff}
 #svg-layer{position:absolute;inset:0;pointer-events:none;z-index:1;display:none}
 #nodes-layer{position:absolute;inset:0;z-index:2;pointer-events:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px 200px 16px;background:#fff}
-.itree{list-style:none;padding-left:20px;position:relative}
+.itree{list-style:none;padding-left:24px;position:relative}
 .itree.root-tree{padding-left:0}
-.itree:not(.root-tree)::before{content:'';position:absolute;left:9px;top:0;bottom:0;width:1px;background:#e0e3e8;pointer-events:none}
 .inode{position:relative}
-.irow{display:flex;align-items:center;padding:7px 4px;cursor:pointer;border-radius:6px;font-size:14px;color:#2c3e50;line-height:1.4}
+.irow{display:flex;align-items:flex-start;padding:7px 4px;cursor:pointer;border-radius:6px;font-size:14px;color:#2c3e50;line-height:1.55}
 .irow:active{background:#eef3fb}
 .irow.selected{background:#e8f0fe}
 .irow.selected .itext{color:#3b6fe0;font-weight:600}
-.irow.root-row{font-weight:700;font-size:15px;color:#3b6fe0}
-.dot{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-size:9px;color:#8b7d6b;flex-shrink:0;margin-right:6px}
-.irow.root-row .dot{color:#3b6fe0}
-.itext{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.iicon{display:inline-block;font-size:13px;margin-right:4px;flex-shrink:0}
-.ibubble{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:6px;background:#fff3cd;border-radius:50%;font-size:11px;flex-shrink:0;cursor:pointer;border:1px solid #ffe08a}
-.ibubble:active{background:#ffe08a}
+.irow.root-row{font-weight:700;font-size:15.5px;color:#3b6fe0}
+.itext{flex:1;white-space:normal;word-break:break-word;min-width:0}
 .mark-red{text-decoration:underline;text-decoration-color:#e74c3c;text-decoration-thickness:2px;text-underline-offset:3px}
 .mark-black{text-decoration:underline;text-decoration-color:#2c3e50;text-decoration-thickness:2px;text-underline-offset:3px}
 .mark-blue{text-decoration:underline;text-decoration-color:#3498db;text-decoration-thickness:2px;text-underline-offset:3px}
 #bracket-view{position:absolute;top:50px;left:0;right:0;bottom:0;background:#fff;padding:16px;overflow:auto;display:none;z-index:5}
 #bracket-view.show{display:block}
-#bracket-view pre{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;font-size:13px;line-height:1.75;white-space:pre;-webkit-user-select:text;user-select:text;color:#2c3e50;padding-bottom:200px}
 .btree{font-family:-apple-system,"PingFang SC",sans-serif;font-size:14px;line-height:1.6;color:#2c3e50;padding-bottom:200px}
 .bnode{position:relative}
-.bchildren{margin-left:8px;padding-left:22px;border-left:1px solid #d0d5dd;position:relative}
-.bchildren>.bnode::before{content:'';position:absolute;left:-22px;top:14px;width:14px;height:1px;background:#d0d5dd}
-.brow{position:relative;padding:3px 0;display:flex;align-items:flex-start;gap:0;cursor:default;-webkit-user-select:text;user-select:text}
-.brow.root-row{font-weight:700;font-size:15px;color:#3b6fe0}
-.bdot{flex-shrink:0;width:14px;color:#8b7d6b;font-size:11px;line-height:1.65;text-align:center}
-.brow.root-row .bdot{color:#3b6fe0}
+.bchildren{margin-left:8px;padding-left:22px;position:relative}
+.brow{position:relative;padding:3px 0;display:flex;align-items:flex-start;gap:0;cursor:pointer}
+.brow.root-row{font-weight:700;font-size:15.5px;color:#3b6fe0}
 .btext{flex:1;word-break:break-word;white-space:pre-wrap;min-width:0}
-.btext.fold{color:#8b7d6b;font-style:italic}
 #breadcrumb{position:fixed;left:8px;right:8px;background:rgba(255,255,255,.97);border-radius:8px;padding:6px 10px;font-size:12px;color:#8b7d6b;display:none;overflow-x:auto;white-space:nowrap;z-index:60;box-shadow:0 2px 10px rgba(0,0,0,0.1);border:1px solid #e0e3e8;bottom:16px;transition:bottom .2s}
 #breadcrumb.show{display:block}
 #breadcrumb span.crumb{color:#5b8ff9;cursor:pointer;padding:2px 4px;display:inline-block;border-radius:4px}
@@ -133,8 +119,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 #note-panel .np-box{background:#fff;width:100%;max-width:520px;max-height:82vh;border-radius:16px 16px 0 0;padding:18px;display:flex;flex-direction:column;overflow-y:auto}
 #note-panel h3{font-size:15px;color:#4a3f35;margin-bottom:10px;flex-shrink:0}
 .np-label{font-size:12px;color:#8b7d6b;margin-bottom:6px;margin-top:12px}
-.np-text{background:#f9f7f3;border:1.5px solid #e0dcd5;border-radius:8px;padding:12px;font-size:15px;line-height:1.8;color:#2c3e50;word-break:break-word;-webkit-user-select:none;user-select:none;min-height:60px;max-height:120px;overflow-y:auto}
-.np-char{display:inline;cursor:pointer;-webkit-user-select:none;user-select:none;padding:1px 0;border-radius:2px}
+.np-text{background:#f9f7f3;border:1.5px solid #e0dcd5;border-radius:8px;padding:12px;font-size:15px;line-height:1.8;color:#2c3e50;word-break:break-word;min-height:60px;max-height:120px;overflow-y:auto}
+.np-char{display:inline;cursor:pointer;padding:1px 0;border-radius:2px}
 .np-char:active{background:rgba(91,143,249,0.2)}
 .np-colors{display:flex;gap:8px;margin-top:8px}
 .np-color-btn{flex:1;padding:10px 4px;border:1.5px solid #e0dcd5;border-radius:8px;background:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;color:#4a3f35}
@@ -200,7 +186,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 <div class="nav-item" id="nav-repo"><span>🏛</span><span class="nav-label">仓库</span></div>
 </div>
 <div id="modal-edit" class="modal-overlay"><div class="modal-box"><h3>编辑节点</h3><input type="text" id="edit-text" placeholder="节点文字"><input type="text" id="edit-link" placeholder="链接（可选）"><label style="font-size:12px;color:#8b7d6b;">备注</label><textarea id="edit-note" placeholder="备注（可选）"></textarea><div class="modal-actions"><button class="modal-btn" id="edit-cancel">取消</button><button class="modal-btn primary" id="edit-save">保存</button></div></div></div>
-<div id="modal-note" class="modal-overlay"><div class="modal-box"><h3>笔记管理</h3><div id="note-manage-list" style="max-height:300px;overflow-y:auto;margin-bottom:10px;"></div><div style="display:flex;gap:8px;margin-bottom:10px;"><input type="text" id="new-note-name" placeholder="新笔记名称" style="flex:1;margin:0;"><button class="modal-btn primary" id="note-create-btn" style="margin:0;white-space:nowrap;">新建</button></div><div class="modal-actions"><button class="modal-btn primary" id="note-modal-close">关闭</button></div></div></div>
 <div id="modal-import" class="modal-overlay"><div class="modal-box"><h3>📥 导入纯文本</h3><p style="font-size:12px;color:#8b7d6b;margin-bottom:8px;">支持缩进、Markdown、编号等，第一行作为根节点</p><textarea id="import-textarea" placeholder="示例：&#10;学习方法&#10;  记忆原理&#10;    间隔重复" style="min-height:200px;font-family:monospace;"></textarea><div class="modal-actions"><button class="modal-btn" id="import-cancel">取消</button><button class="modal-btn primary" id="import-confirm">生成导图</button></div></div></div>
 <div id="modal-export" class="modal-overlay"><div class="modal-box" style="max-width:320px;"><h3>导出为</h3><button class="modal-btn" id="export-json-btn" style="width:100%;margin-bottom:8px;justify-content:center;">JSON（可再次导入）</button><button class="modal-btn primary" id="export-png-btn" style="width:100%;margin-bottom:8px;justify-content:center;">PNG 图片</button><button class="modal-btn" id="export-md-btn" style="width:100%;margin-bottom:8px;justify-content:center;">Markdown 大纲</button><div class="modal-actions"><button class="modal-btn primary" id="export-cancel">取消</button></div></div></div>
 <div id="context-menu"></div>
@@ -239,7 +224,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
   var W,H,dpr;
   var drops=[],lights=[];
   var running=false;
-  
   function resize(){
     dpr=window.devicePixelRatio||1;
     W=canvas.width=window.innerWidth*dpr;
@@ -248,7 +232,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
     canvas.style.height=window.innerHeight+'px';
     init();
   }
-  
   function makeDrop(startY){
     var s=Math.random();
     return {
@@ -264,12 +247,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
       ph:Math.random()*6.28
     };
   }
-  
   function initDrops(){
     drops=[];
     for(var i=0;i<5;i++) drops.push(makeDrop(Math.random()*H));
   }
-  
   function initLights(){
     lights=[
       {x:0.15, y:0.78, r:0.9, c:[80,140,200], a:0.14, pulse:0.0008, ph:0},
@@ -278,12 +259,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
       {x:0.88, y:0.7, r:0.5, c:[120,100,180], a:0.07, pulse:0.0009, ph:4.7}
     ];
   }
-  
-  function init(){
-    initDrops();
-    initLights();
-  }
-  
+  function init(){ initDrops(); initLights(); }
   function drawBackdrop(t){
     ctx.fillStyle='#020510';
     ctx.fillRect(0,0,W,H);
@@ -306,7 +282,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
       ctx.fillRect(px-r,py-r,r*2,r*2);
     });
   }
-  
   function drawDrops(t,dt){
     drops.forEach(function(d,idx){
       d.y += d.speed*dt;
@@ -345,7 +320,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
       ctx.fill();
     });
   }
-  
   function drawGlass(t){
     ctx.save();
     ctx.globalCompositeOperation='screen';
@@ -357,7 +331,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
     ctx.fillRect(0,0,W,H);
     ctx.restore();
   }
-  
   var lastT=0;
   function draw(t){
     if(!running)return;
@@ -370,7 +343,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
     drawDrops(t,dt);
     requestAnimationFrame(draw);
   }
-  
   function start(){
     if(running)return;
     resize();
@@ -380,12 +352,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
     requestAnimationFrame(draw);
   }
   function stop(){running=false;}
-  
-  window.addEventListener('resize',function(){
-    if(!running)return;
-    resize();
-  });
-  
+  window.addEventListener('resize',function(){ if(running)resize(); });
   var hp=document.getElementById('home-page');
   if(hp){
     new MutationObserver(function(){
@@ -483,6 +450,53 @@ function renderBracketText(root){
   return lines.join('\n');
 }
 
+/* 大括号 SVG */
+function makeBraceSVG(h, tipY){
+  var ns='http://www.w3.org/2000/svg';
+  var svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox','0 0 12 '+h);
+  svg.setAttribute('preserveAspectRatio','none');
+  svg.style.display='block';
+  svg.style.position='absolute';
+  svg.style.left='0';
+  svg.style.top='0';
+  svg.style.width='12px';
+  svg.style.height=h+'px';
+  var r=Math.min(6,h*0.08);
+  var y1=tipY-r, y2=tipY+r, yBot=h-r;
+  var d=[
+    'M 12 0',
+    'C '+(12-r)+' 0 6 '+(r/2)+' 6 '+r,
+    'L 6 '+y1,
+    'C 6 '+(tipY-r/2)+' 4 '+tipY+' 0 '+tipY,
+    'C 4 '+tipY+' 6 '+(tipY+r/2)+' 6 '+y2,
+    'L 6 '+yBot,
+    'C 6 '+(h-r/2)+' '+(12-r)+' '+h+' 12 '+h
+  ].join(' ');
+  var path=document.createElementNS(ns,'path');
+  path.setAttribute('d',d);
+  path.setAttribute('stroke','#b8c4d4');
+  path.setAttribute('stroke-width','1.3');
+  path.setAttribute('fill','none');
+  path.setAttribute('stroke-linecap','round');
+  svg.appendChild(path);
+  return svg;
+}
+
+function fillBraces(){
+  document.querySelectorAll('.bnode').forEach(function(li){
+    var wrap=li.querySelector(':scope > .bchildren');
+    if(!wrap) return;
+    var slot=wrap.querySelector(':scope > .brace-slot');
+    if(!slot) return;
+    var wrapH=wrap.offsetHeight;
+    slot.style.top='0px';
+    slot.style.height=wrapH+'px';
+    slot.innerHTML='';
+    slot.appendChild(makeBraceSVG(wrapH, wrapH/2));
+  });
+}
+
 function renderBracketDOM(root){
   var box=document.getElementById('bracketTree');
   if(!box)return;
@@ -493,28 +507,41 @@ function renderBracketDOM(root){
     wrap.className='bnode';
     var row=document.createElement('div');
     row.className='brow'+(depth===0?' root-row':'');
-    var dot=document.createElement('span');
-    dot.className='bdot';
-    var hasKid=n.children&&n.children.length>0;
-    dot.textContent=hasKid?(n.collapsed?'▶':'▼'):'•';
-    row.appendChild(dot);
     var txt=document.createElement('span');
     txt.className='btext';
     txt.innerHTML=buildTextHTML(n.text,n.marks);
     row.appendChild(txt);
-    if(hasKid){
-      row.style.cursor='pointer';
-      row.addEventListener('click',function(){
-        saveHistory();
-        n.collapsed=!n.collapsed;
-        render();
-        saveAll();
-      });
-    }
+    row.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(currentMode==='note'){
+        openNotePanel(n.id);
+      } else if(currentMode==='review'){
+        if(n.link) window.open(n.link,'_blank');
+        if(n.note){
+          var pp=document.getElementById('note-popup');
+          pp.textContent=n.note;
+          pp.style.display='block';
+          pp.style.left=Math.min(e.clientX,window.innerWidth-280)+'px';
+          pp.style.top=(e.clientY+10)+'px';
+          setTimeout(function(){pp.style.display='none';},3000);
+        }
+      } else {
+        selectNode(n.id);
+      }
+    });
     wrap.appendChild(row);
+    var hasKid=n.children&&n.children.length>0;
     if(hasKid&&!n.collapsed){
       var kids=document.createElement('div');
       kids.className='bchildren';
+      var slot=document.createElement('div');
+      slot.className='brace-slot';
+      slot.style.position='absolute';
+      slot.style.left='0';
+      slot.style.top='0';
+      slot.style.width='12px';
+      slot.style.pointerEvents='none';
+      kids.appendChild(slot);
       n.children.forEach(function(c){kids.appendChild(buildNode(c,depth+1));});
       wrap.appendChild(kids);
     } else if(hasKid&&n.collapsed){
@@ -524,11 +551,12 @@ function renderBracketDOM(root){
       hint.className='bnode';
       var hr=document.createElement('div');
       hr.className='brow';
-      var hd=document.createElement('span');
-      hd.className='bdot';hd.textContent='•';
       var ht=document.createElement('span');
-      ht.className='btext fold';ht.textContent='已折叠（点击展开）';
-      hr.appendChild(hd);hr.appendChild(ht);
+      ht.className='btext';
+      ht.style.color='#8b7d6b';
+      ht.style.fontStyle='italic';
+      ht.textContent='已折叠（点节点选中后用工具栏展开）';
+      hr.appendChild(ht);
       hint.appendChild(hr);
       kids2.appendChild(hint);
       wrap.appendChild(kids2);
@@ -536,6 +564,7 @@ function renderBracketDOM(root){
     return wrap;
   }
   box.appendChild(buildNode(root,0));
+  requestAnimationFrame(fillBraces);
 }
 
 function renderIndentTree(){
@@ -555,40 +584,30 @@ function renderIndentTree(){
     var row=document.createElement('div');
     row.className='irow'+(depth===0?' root-row':'')+(n.id===selectedId?' selected':'');
     row.dataset.nid=n.id;
-    if(n.icon){
-      var ico=document.createElement('span');
-      ico.className='iicon';
-      ico.textContent={star:'⭐',warn:'⚠️',idea:'💡',q:'❓',check:'✅'}[n.icon]||'';
-      row.appendChild(ico);
-    }
-    var dot=document.createElement('span');
-    dot.className='dot';
-    var hasKid=n.children&&n.children.length>0;
-    dot.textContent=hasKid?(n.collapsed?'▶':'▼'):'●';
-    row.appendChild(dot);
     var txt=document.createElement('span');
     txt.className='itext';
     txt.innerHTML=buildTextHTML(n.text, n.marks);
     row.appendChild(txt);
-    if(n.bubble){
-      var bub=document.createElement('span');
-      bub.className='ibubble';
-      bub.textContent='💬';
-      bub.addEventListener('click',function(e){
-        e.stopPropagation();
-        alert(n.bubble);
-      });
-      row.appendChild(bub);
-    }
     row.addEventListener('click',function(e){
       e.stopPropagation();
       if(currentMode==='note'){
         openNotePanel(n.id);
+      } else if(currentMode==='review'){
+        if(n.link) window.open(n.link,'_blank');
+        if(n.note){
+          var pp=document.getElementById('note-popup');
+          pp.textContent=n.note;
+          pp.style.display='block';
+          pp.style.left=Math.min(e.clientX,window.innerWidth-280)+'px';
+          pp.style.top=(e.clientY+10)+'px';
+          setTimeout(function(){pp.style.display='none';},3000);
+        }
       } else {
         selectNode(n.id);
       }
     });
     li.appendChild(row);
+    var hasKid=n.children&&n.children.length>0;
     if(hasKid&&!n.collapsed){
       var ul=document.createElement('ul');
       ul.className='itree';
@@ -1213,9 +1232,6 @@ function init(){
 }
 init();
 })();
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(function(){});
-}
 </script>
 </body>
 </html>
